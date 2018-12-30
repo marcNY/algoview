@@ -23,11 +23,13 @@ def create_contract(symbol='IBKR', secType='STK', currency='USD', exchange='ISLA
     contract.exchange = exchange
     if expiry:
         contract.lastTradeDateOrContractMonth = expiry
+
     return contract
 
-def get_hist_data(ibcontract, durationStr='1 M', barSizeSetting='1 day'):
+def get_hist_data(ibcontract, durationStr='1 D', barSizeSetting='1 hour'):
     app = hmd.TestApp("127.0.0.1", 4001, 1) # Connection
     resolved_ibcontract = app.resolve_ib_contract(ibcontract)
     historic_data = app.get_IB_historical_data(resolved_ibcontract, durationStr, barSizeSetting)
     app.disconnect() # Disconnection
 
+    return historic_data
