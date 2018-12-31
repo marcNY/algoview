@@ -1,0 +1,35 @@
+{
+  "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDcBHwzDvyBQ6bDppkIs9MP4ksKqCMyXQ/A52JivHZKh4YO/9vJsT3oaYhSpDCE9RPocOEQvwsHsFReW2nUEc6OLLyoCFFxIb7KkLGsmfakkut/fFdNJYh0xOTbSN8YvLWcqph09XAY2Y/f0AL7vfO1cuCqtkMt8hFrBGWxDdf9CQIDAQAB",
+
+  "manifest_version": 2,
+  "icons": { "128": "pic.png" },
+  "browser_action": {
+    "default_icon": "pic.png",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "persistent": false,
+    "scripts": ["messaging.js", "background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.tradingview.com/*"],
+      "js": ["contentScript.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "nativeMessaging",
+    "storage",
+    "tabs",
+    "notifications",
+    "webNavigation",
+    "http://localhost:8080/"
+  ],
+  "web_accessible_resources": ["contentScript.js"],
+  "content_security_policy": "script-src 'self'; object-src 'self'",
+  "name": "Tradingview Alerts",
+  "version": "1.0",
+  "description": "",
+  "options_page": "options.html"
+}

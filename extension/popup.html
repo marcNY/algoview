@@ -1,0 +1,46 @@
+<style type="text/css">
+.center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 30px;
+}
+.center2 {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+.center3 {
+    margin-left: auto;
+    margin-right: auto;
+}
+body {
+    min-width: 300px; /* your desired width */
+    position: relative;
+    /*vertical-align:middle;*/
+}
+button {
+    display:inline-block;
+    min-width: 70px;
+    width: 70px;
+}
+</style>
+
+
+<html>
+    <head>
+        <center><b>TradingView Alerts</b></center>
+    </head>
+    <body>
+        <img src='pic.png' id='defImage' class="center">
+        <p><div id="popup_text" class="center3"><center>No alerts to show</center></div></p>
+        <div>
+            <button id='ButtonPoll'>Pause</button>       
+            <button id='ButtonGroup'>Group</button>
+            <button id='ButtonClean'>Clean</button>
+            <button id='ButtonFlush'>Flush</button>
+        </div>
+        <script src="lib/jquery-3.3.1.min.js"></script>
+        <script src="popup.js"></script>
+    </body>
+</html>
