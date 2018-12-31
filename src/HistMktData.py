@@ -180,11 +180,11 @@ class TestClient(EClient):
             return ibcontract
 
         if len(new_contract_details)>1:
-            print("got multiple contracts using first one")
+            print("got multiple contracts - will use the first one")
 
-        new_contract_details=new_contract_details[0]
+        new_contract_details = new_contract_details[0]
 
-        resolved_ibcontract=new_contract_details.contract
+        resolved_ibcontract = new_contract_details.contract
 
         return resolved_ibcontract
 
@@ -216,14 +216,14 @@ class TestClient(EClient):
             whatToShow,  # whatToShow,
             1,  # useRTH,
             1,  # formatDate
-            False,  # KeepUpToDate <<==== added for api 9.73.2
+            False,  # KeepUpToDate <== added for api 9.73.2
             [] ## chartoptions not used
         )
 
 
 
         ## Wait until we get a completed data, an error, or get bored waiting
-        MAX_WAIT_SECONDS = 10
+        MAX_WAIT_SECONDS = 8
         print("Getting historical data from the server... could take up to %d seconds to complete " % MAX_WAIT_SECONDS)
 
         historic_data = historic_data_queue.get(timeout = MAX_WAIT_SECONDS)
