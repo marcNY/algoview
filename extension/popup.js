@@ -215,6 +215,7 @@ $(function() {
   $("#ButtonSendNative").click(function() {
     let message = { type: "SEND_NATIVE", value: $("#message_to_host").val() };
     port2.postMessage(message);
+    $("#message_to_host").val("");
     console.log("message sent:", message);
   });
 });
