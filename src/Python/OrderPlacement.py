@@ -771,7 +771,7 @@ class TestApp(TestWrapper, TestClient):
 
 if __name__ == '__main__':
 
-    app = TestApp("127.0.0.1", 7497, 1)
+    app = TestApp("127.0.0.1", 7497, 3)
 
     ## lets get prices for this
     ibcontract = IBcontract()

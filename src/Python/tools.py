@@ -30,7 +30,7 @@ def parse_message(app, underlying, message):
         order.tif = 'DAY'
         if order_params['d']=='long':
             order.action = "BUY"
-            order.lmtPrice = best_bid + int(order_params['p']) * minTick # TV_to_IB[underlying]['multiplier']
+            order.lmtPrice = best_bid + int(order_params['p']) * minTick
         else:
             order.action = "SELL"
             order.lmtPrice = best_offer + int(order_params['p']) * minTick
