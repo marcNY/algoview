@@ -141,6 +141,8 @@ class xmsClient {
   }
 }
 
+// Connecting to Native Port
+connectNative();
 // Platform
 const URL = "www.tradingview.com";
 

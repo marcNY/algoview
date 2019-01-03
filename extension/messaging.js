@@ -22,12 +22,10 @@ function onDisconnected() {
   nativePort = null;
 }
 
-function connect() {
+function connectNative() {
   var hostName = "com.google.chrome.example.echo";
   console.log("Connecting to native messaging host <b>" + hostName + "</b>");
   nativePort = chrome.runtime.connectNative(hostName);
   nativePort.onMessage.addListener(onNativeMessage);
   nativePort.onDisconnect.addListener(onDisconnected);
 }
-
-connect();

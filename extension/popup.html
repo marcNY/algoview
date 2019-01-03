@@ -1,46 +1,25 @@
-<style type="text/css">
-.center {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    width: 30px;
-}
-.center2 {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-}
-.center3 {
-    margin-left: auto;
-    margin-right: auto;
-}
-body {
-    min-width: 300px; /* your desired width */
-    position: relative;
-    /*vertical-align:middle;*/
-}
-button {
-    display:inline-block;
-    min-width: 70px;
-    width: 70px;
-}
-</style>
-
-
 <html>
     <head>
-        <center><b>TradingView Alerts</b></center>
+        <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
     </head>
     <body>
+        <center><b>TradingView Alerts</b></center>
         <img src='pic.png' id='defImage' class="center">
         <p><div id="popup_text" class="center3"><center>No alerts to show</center></div></p>
         <div>
-            <button id='ButtonPoll'>Pause</button>       
-            <button id='ButtonGroup'>Group</button>
-            <button id='ButtonClean'>Clean</button>
-            <button id='ButtonFlush'>Flush</button>
+            <button type="button" class="btn btn-outline-primary" id='ButtonPoll'>Pause</button>       
+            <button type="button" class="btn btn-outline-primary" id='ButtonGroup'>Group</button>
+            <button type="button" class="btn btn-outline-warning" id='ButtonClean'>Clean</button>
+            <button type="button" class="btn btn-outline-danger" id='ButtonFlush'>Flush</button>
+            <hr/>
+            <input id="message_to_host" type="text" class="form-control" placeholder="Message to Native App">
+            <button id="ButtonSendNative" type="button" class="btn btn-outline-secondary">Send</button>
+
         </div>
+        
         <script src="lib/jquery-3.3.1.min.js"></script>
+        <script src="messaging.js"></script>
         <script src="popup.js"></script>
     </body>
 </html>

@@ -211,4 +211,10 @@ $(function() {
     if (x != null) x.remove();
     port2.postMessage("POPUP_FLUSH");
   });
+
+  $("#ButtonSendNative").click(function() {
+    let message = { type: "SEND_NATIVE", value: $("#message_to_host").val() };
+    port2.postMessage(message);
+    console.log("message sent:", message);
+  });
 });
