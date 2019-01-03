@@ -141,8 +141,6 @@ class xmsClient {
   }
 }
 
-// Connecting to Native Port
-connectNative();
 // Platform
 const URL = "www.tradingview.com";
 
@@ -191,6 +189,33 @@ chrome.runtime.onStartup.addListener(function() {
   reset();
 });
 
+function listenPopup(msg) {
+  popup_callback();
+  if (msg.type == "POPUP_ALERTS") {
+    portFrom.postMessage([alerts_db, status_listen]);
+  } else if (msg.type == "POPUP_GROUPS")
+    portFrom.postMessage([group(), status_listen]);
+  else if (msg.type == "POPUP_CLEAN") {
+    clean();
+    portFrom.postMessage([alerts_db, status_listen]);
+  } else if (msg.type == "POPUP_FLUSH") {
+    flush();
+    portFrom.postMessage([alerts_db, status_listen]);
+  } else if (msg.type == "POPUP_EVENT") {
+    status_listen = !status_listen;
+    if (status_listen == false) {
+      clearInterval(thread_poll_id);
+      chrome.browserAction.setBadgeBackgroundColor({ color: "RED" });
+      console.log("Alerts suspended");
+    } else {
+      thread_poll_id = setInterval(poll, TIME_POLL);
+      tabManager();
+      console.log("Alerts resumed");
+    }
+  } else if (msg.type == "SEND_NATIVE") {
+    sendNativeMessage(msg.value);
+  }
+}
 // New page / popup ================================================================================
 chrome.runtime.onConnect.addListener(function(portFrom) {
   console.log("Listening from port: ", portFrom.name);
@@ -234,31 +259,7 @@ chrome.runtime.onConnect.addListener(function(portFrom) {
       thread_poll_id = setInterval(poll, TIME_POLL);
     }
   } else if (portFrom.name === "popup") {
-    portFrom.onMessage.addListener(function(msg) {
-      popup_callback();
-      if (msg == "POPUP_ALERTS") {
-        portFrom.postMessage([alerts_db, status_listen]);
-      } else if (msg == "POPUP_GROUPS")
-        portFrom.postMessage([group(), status_listen]);
-      else if (msg == "POPUP_CLEAN") {
-        clean();
-        portFrom.postMessage([alerts_db, status_listen]);
-      } else if (msg == "POPUP_FLUSH") {
-        flush();
-        portFrom.postMessage([alerts_db, status_listen]);
-      } else if (msg == "POPUP_EVENT") {
-        status_listen = !status_listen;
-        if (status_listen == false) {
-          clearInterval(thread_poll_id);
-          chrome.browserAction.setBadgeBackgroundColor({ color: "RED" });
-          console.log("Alerts suspended");
-        } else {
-          thread_poll_id = setInterval(poll, TIME_POLL);
-          tabManager();
-          console.log("Alerts resumed");
-        }
-      }
-    });
+    portFrom.onMessage.addListener(msg => listenPopup(msg));
   }
 });
 
@@ -811,23 +812,7 @@ function api_getN(id, symbol, exchange) {
   });
 }
 
-function popup_callback() {
-  var symbol = "XBTUSD";
-  var exchange_id = "bitmex";
-
-  console.log("Token initialised: ", api.xmsAPIAuthToken != null);
-
-  api
-    .getInstrument(symbol, exchange_id)
-    .then(result => result.json())
-    .then(data => {
-      console.log(data);
-    })
-    .catch(function(err) {
-      console.log("Failed to get instrument " + symbol);
-      console.log(err);
-    });
-}
+function popup_callback() {}
 
 function sendTestOrder() {
   const quantity = 1;

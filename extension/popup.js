@@ -194,22 +194,22 @@ $(function() {
   $("#ButtonGroup").click(function() {
     x = $("#dynamicModule");
     if (x != null) x.remove();
-    port2.postMessage("POPUP_GROUPS");
+    port2.postMessage({ type: "POPUP_GROUPS" });
   });
   $("#ButtonPoll").click(function() {
     listen = !listen;
     updateButton();
-    port2.postMessage("POPUP_EVENT");
+    port2.postMessage({ type: "POPUP_EVENT" });
   });
   $("#ButtonClean").click(function() {
     x = $("#dynamicModule");
     if (x != null) x.remove();
-    port2.postMessage("POPUP_CLEAN");
+    port2.postMessage({ type: "POPUP_CLEAN" });
   });
   $("#ButtonFlush").click(function() {
     x = $("#dynamicModule");
     if (x != null) x.remove();
-    port2.postMessage("POPUP_FLUSH");
+    port2.postMessage({ type: "POPUP_FLUSH" });
   });
 
   $("#ButtonSendNative").click(function() {

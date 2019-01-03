@@ -9,12 +9,15 @@ var getKeys = function(obj) {
 };
 
 function sendNativeMessage(message) {
+  if (nativePort == null) {
+    connectNative();
+  }
   nativePort.postMessage(JSON.stringify(message));
   console.log("Sent message: <b>" + JSON.stringify(message) + "</b>");
 }
 
 function onNativeMessage(message) {
-  console.log("Received message: <b>" + JSON.stringify(message) + "</b>");
+  console.log("Received message:" + JSON.stringify(message));
 }
 
 function onDisconnected() {
