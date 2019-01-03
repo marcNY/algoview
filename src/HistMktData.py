@@ -185,8 +185,9 @@ class TestClient(EClient):
         new_contract_details = new_contract_details[0]
 
         resolved_ibcontract = new_contract_details.contract
+        minTick = new_contract_details.minTick
 
-        return resolved_ibcontract
+        return resolved_ibcontract, minTick
 
 
     def get_IB_historical_data(self, ibcontract, durationStr="1 M", barSizeSetting="1 day",

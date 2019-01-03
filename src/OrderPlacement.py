@@ -500,11 +500,12 @@ class TestClient(EClient):
         if len(new_contract_details)>1:
             print("got multiple contracts using first one")
 
-        new_contract_details=new_contract_details[0]
+        new_contract_details = new_contract_details[0]
 
-        resolved_ibcontract=new_contract_details.contract
+        resolved_ibcontract = new_contract_details.contract
+        minTick = new_contract_details.minTick
 
-        return resolved_ibcontract
+        return resolved_ibcontract, minTick
 
 
     def get_next_brokerorderid(self):
@@ -751,6 +752,7 @@ class TestClient(EClient):
                 finished = True
 
         ## return nothing
+        
 
 class TestApp(TestWrapper, TestClient):
     def __init__(self, ipaddress, portid, clientid):
