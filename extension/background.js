@@ -22,10 +22,7 @@ class xmsClient {
 
   getLatestAuthorizationKey() {
     const oauthApplicationId = "aus2eaqpr0kZ9gg2f0i7";
-    const oktaOAuthEndpoint =
-      "https://elwoodam.okta-emea.com/oauth2/" +
-      oauthApplicationId +
-      "/v1/token";
+    const oktaOAuthEndpoint = "";
     var authHeaders = {
       "Content-Type": "application/x-www-form-urlencoded",
       "Cache-Control": "no-cache"
