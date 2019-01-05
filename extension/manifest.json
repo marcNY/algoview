@@ -13,7 +13,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.tradingview.com/*"],
+      "matches": ["https://*.tradingview.com/chart/*"],
       "js": ["contentScript.js"],
       "run_at": "document_idle"
     }
