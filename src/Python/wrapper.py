@@ -1,4 +1,5 @@
 from ibapi.wrapper import EWrapper
+from ibapi.contract import Contract as IBcontract
 from threading import Thread
 import queue, datetime, utils
 
@@ -14,15 +15,17 @@ class TestWrapper(EWrapper):
         self._my_contract_details = {}
         self._my_market_data_dict = {}
         self._my_requested_execution = {}
+        self._my_accounts = {}
 
         ## We set these up as we could get things coming along before we run an init
         self._my_executions_stream = queue.Queue()
         self._my_commission_stream = queue.Queue()
         self._my_open_orders = queue.Queue()
+        self._my_positions = queue.Queue()
 
     ## error handling code
     def init_error(self):
-        error_queue=queue.Queue()
+        error_queue = queue.Queue()
         self._my_errors = error_queue
 
     def get_error(self, timeout=5):
@@ -42,9 +45,9 @@ class TestWrapper(EWrapper):
         ## Overriden method
         errormsg = "IB error id %d errorcode %d string %s" % (id, errorCode, errorString)
         self._my_errors.put(errormsg)
-
-
-    ## get contract details code
+    ###########################
+    ## CONTRACT DETAILS CODE ##
+    ###########################
     def init_contractdetails(self, reqId):
         contract_details_queue = self._my_contract_details[reqId] = queue.Queue()
 
@@ -281,3 +284,61 @@ class TestWrapper(EWrapper):
             self.init_nextvalidid()
 
         self._my_orderid_data.put(orderId)
+    ########################
+    ## GET POSITIONS CODE ##
+    ########################
+    def init_positions(self):
+        positions_queue = self._my_positions = queue.Queue()
+
+        return positions_queue
+
+    def position(self, account, contract, position,
+                 avgCost):
+
+        ## uses a simple tuple, but you could do other, fancier, things here
+        position_object = (account, contract, position,
+                 avgCost)
+
+        self._my_positions.put(position_object)
+
+    def positionEnd(self):
+        ## overriden method
+
+        self._my_positions.put(utils.FINISHED)
+    #########################
+    ## GET ACCOUNTING DATA ##
+    #########################
+    def init_accounts(self, accountName):
+        accounting_queue = self._my_accounts[accountName] = queue.Queue()
+
+        return accounting_queue
+
+
+    def updateAccountValue(self, key:str, val:str, currency:str,
+                            accountName:str):
+
+        ## use this to seperate out different account data
+        data = utils.identifed_as(utils.ACCOUNT_VALUE_FLAG, (key,val, currency))
+        self._my_accounts[accountName].put(data)
+
+
+    def updatePortfolio(self, contract, position:float,
+                        marketPrice:float, marketValue:float,
+                        averageCost:float, unrealizedPNL:float,
+                        realizedPNL:float, accountName:str):
+
+        ## use this to seperate out different account data
+        data = utils.identifed_as(utils.ACCOUNT_UPDATE_FLAG, (contract, position, marketPrice, marketValue, averageCost,
+                                          unrealizedPNL, realizedPNL))
+        self._my_accounts[accountName].put(data)
+
+    def updateAccountTime(self, accountName:str, timeStamp:str):
+
+        ## use this to seperate out different account data
+        data = utils.identifed_as(utils.ACCOUNT_TIME_FLAG, timeStamp)
+        self._my_accounts[accountName].put(data)
+
+
+    def accountDownloadEnd(self, accountName:str):
+        
+        self._my_accounts[accountName].put(utils.FINISHED)

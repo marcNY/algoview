@@ -1,5 +1,7 @@
+from ibapi.contract import Contract as IBcontract
+from copy import deepcopy
 import numpy as np, pandas as pd
-import queue, datetime
+import queue, datetime, time
 
 ## Define global variables used in several modules:
 global FINISHED
@@ -10,6 +12,12 @@ global TIME_OUT
 TIME_OUT = object()
 global NO_ATTRIBUTES_SET
 NO_ATTRIBUTES_SET = object() ## marker to show a mergable object hasn't got any attributes
+global ACCOUNT_UPDATE_FLAG
+ACCOUNT_UPDATE_FLAG = "update"
+global ACCOUNT_VALUE_FLAG
+ACCOUNT_VALUE_FLAG = "value"
+global ACCOUNT_TIME_FLAG
+ACCOUNT_TIME_FLAG = "time"
 
 global DEFAULT_HISTORIC_DATA_ID
 DEFAULT_HISTORIC_DATA_ID = 50
@@ -21,6 +29,39 @@ global FILL_CODE
 FILL_CODE = -1 ## This is the reqId IB API sends when a fill is received
 
 
+def create_contract(symbol, secType, currency, exchange, expiry):
+
+    contract = IBcontract()
+    contract.symbol = symbol
+    contract.secType = secType
+    contract.currency = currency
+    contract.exchange = exchange
+    if expiry is not None:
+        contract.lastTradeDateOrContractMonth = expiry
+
+    return contract
+
+
+def calc_bar_dur(barSize):
+    
+    if barSize=='15m':
+        durationStr = '1 D'
+        barSizeSetting = '15 mins'
+    elif barSize=='1h':
+        durationStr = '2 D'
+        barSizeSetting = '1 hour'
+    elif barSize=='4h':
+        durationStr = '1 W'
+        barSizeSetting = '4 hours'
+    elif barSize=='1d':
+        durationStr = '1 M'
+        barSizeSetting = '1 day'
+    else:
+        return "barSize unknown: add it to utils.calc_durationStr"
+    
+    return durationStr, barSizeSetting
+
+    
 class finishableQueue(object):
 
     def __init__(self, queue_to_finish):
@@ -162,8 +203,8 @@ class mergableObject(object):
         :param kwargs: other attributes which will appear in list returned by attributes() method
         """
 
-        self.id=id
-        attr_to_use=self.attributes()
+        self.id = id
+        attr_to_use = self.attributes()
 
         for argname in kwargs:
             if argname in attr_to_use:
@@ -322,3 +363,164 @@ class list_of_execInformation(list_of_mergables):
 
 class list_of_orderInformation(list_of_mergables):
     pass
+
+
+class identifed_as(object):
+    """
+    Used to identify
+    """
+
+    def __init__(self, label, data):
+        self.label = label
+        self.data = data
+
+    def __repr__(self):
+        return "Identified as %s" % self.label
+
+
+class list_of_identified_items(list):
+    """
+    A list of elements, each of class identified_as (or duck equivalent)
+    Used to seperate out accounting data
+    """
+    def seperate_into_dict(self):
+        """
+        :return: dict, keys are labels, each element is a list of items matching label
+        """
+
+        all_labels = [element.label for element in self]
+        dict_data = dict([
+                             (label,
+                              [element.data for element in self if element.label==label])
+                          for label in all_labels])
+
+        return dict_data
+
+
+## cache used for accounting data
+class simpleCache(object):
+    """
+    Cache is stored in _cache in nested dict, outer key is accountName, inner key is cache label
+    """
+    def __init__(self, max_staleness_seconds):
+        self._cache = dict()
+        self._cache_updated_local_time = dict()
+
+        self._max_staleness_seconds = max_staleness_seconds
+
+    def __repr__(self):
+        return "Cache with labels"+",".join(self._cache.keys())
+
+    def update_data(self, accountName):
+        raise Exception("You need to set this method in an inherited class")
+
+    def _get_last_updated_time(self, accountName, cache_label):
+        if accountName not in self._cache_updated_local_time.keys():
+            return None
+
+        if cache_label not in self._cache_updated_local_time[accountName]:
+            return None
+
+        return self._cache_updated_local_time[accountName][cache_label]
+
+
+    def _set_time_of_updated_cache(self, accountName, cache_label):
+        # make sure we know when the cache was updated
+        if accountName not in self._cache_updated_local_time.keys():
+            self._cache_updated_local_time[accountName]={}
+
+        self._cache_updated_local_time[accountName][cache_label] = time.time()
+
+
+    def _is_data_stale(self, accountName, cache_label, ):
+        """
+        Check to see if the cached data has been updated recently for a given account and label, or if it's stale
+        :return: bool
+        """
+        STALE = True
+        NOT_STALE = False
+
+        last_update = self._get_last_updated_time(accountName, cache_label)
+
+        if last_update is None:
+            ## we haven't got any data, so by construction our data is stale
+            return STALE
+
+        time_now = time.time()
+        time_since_updated = time_now - last_update
+
+        if time_since_updated > self._max_staleness_seconds:
+            return STALE
+        else:
+            ## recently updated
+            return NOT_STALE
+
+    def _check_cache_empty(self, accountName, cache_label):
+        """
+        :param accountName: str
+        :param cache_label: str
+        :return: bool
+        """
+        CACHE_EMPTY = True
+        CACHE_PRESENT = False
+
+        cache = self._cache
+        if accountName not in cache.keys():
+            return CACHE_EMPTY
+
+        cache_this_account = cache[accountName]
+        if cache_label not in cache_this_account.keys():
+            return CACHE_EMPTY
+
+        return CACHE_PRESENT
+
+    def _return_cache_values(self, accountName, cache_label):
+        """
+        :param accountName: str
+        :param cache_label: str
+        :return: None or cache contents
+        """
+
+        if self._check_cache_empty(accountName, cache_label):
+            return None
+
+        return self._cache[accountName][cache_label]
+
+
+    def _create_cache_element(self, accountName, cache_label):
+
+        cache = self._cache
+        if accountName not in cache.keys():
+            cache[accountName] = {}
+
+        cache_this_account = cache[accountName]
+        if cache_label not in cache_this_account.keys():
+            cache[accountName][cache_label] = None
+
+
+    def get_updated_cache(self, accountName, cache_label):
+        """
+        Checks for stale cache, updates if needed, returns up to date value
+        :param accountName: str
+        :param cache_label:  str
+        :return: updated part of cache
+        """
+
+        if self._is_data_stale(accountName, cache_label) or self._check_cache_empty(accountName, cache_label):
+            self.update_data(accountName)
+
+        return self._return_cache_values(accountName, cache_label)
+
+
+    def update_cache(self, accountName, dict_with_data):
+        """
+        :param accountName: str
+        :param dict_with_data: dict, which has keynames with cache labels
+        :return: nothing
+        """
+
+        all_labels = dict_with_data.keys()
+        for cache_label in all_labels:
+            self._create_cache_element(accountName, cache_label)
+            self._cache[accountName][cache_label] = dict_with_data[cache_label]
+            self._set_time_of_updated_cache(accountName, cache_label)

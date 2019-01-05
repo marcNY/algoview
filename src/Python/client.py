@@ -1,6 +1,8 @@
 from ibapi.client import EClient
-import queue, datetime, utils, time
-
+from ibapi.contract import Contract as IBcontract
+from ibapi.execution import ExecutionFilter
+import queue, datetime, time, utils
+from copy import deepcopy
 
 class TestClient(EClient):
     """
@@ -13,6 +15,10 @@ class TestClient(EClient):
         
         self._market_data_q_dict = {}
         self._commissions = utils.list_of_execInformation()
+        ## We use these to store accounting data
+        self._account_cache = utils.simpleCache(max_staleness_seconds = 5*60)
+        ## Override function
+        self._account_cache.update_data = self._update_accounting_data
 
     def resolve_ib_contract(self, ibcontract, reqId=utils.DEFAULT_GET_CONTRACT_ID):
 
@@ -24,13 +30,11 @@ class TestClient(EClient):
         ## Make a place to store the data we're going to return
         contract_details_queue = utils.finishableQueue(self.init_contractdetails(reqId))
 
-        print("Getting full contract details from the server... ")
-
         self.reqContractDetails(reqId, ibcontract)
 
         ## Run until we get a valid contract(s) or get bored waiting
-        MAX_WAIT_SECONDS = 10
-        new_contract_details = contract_details_queue.get(timeout = MAX_WAIT_SECONDS)
+        max_wait_seconds = 2
+        new_contract_details = contract_details_queue.get(timeout=max_wait_seconds)
 
         while self.wrapper.is_error():
             print(self.get_error())
@@ -87,8 +91,7 @@ class TestClient(EClient):
         )
 
         ## Wait until we get a completed data, an error, or get bored waiting
-        max_wait_seconds = 8
-        print("Getting historical data from the server... could take up to %d seconds to complete " % MAX_WAIT_SECONDS)
+        max_wait_seconds = 3
 
         historic_data = historic_data_queue.get(timeout = max_wait_seconds)
 
@@ -183,7 +186,7 @@ class TestClient(EClient):
             brokerorderid = orderid_q.get(timeout=max_wait_seconds)
         except queue.Empty:
             print("Wrapper timeout waiting for broker orderid")
-            brokerorderid = TIME_OUT
+            brokerorderid = utils.TIME_OUT
 
         while self.wrapper.is_error():
             print(self.get_error(timeout=max_wait_seconds))
@@ -255,7 +258,7 @@ class TestClient(EClient):
         return open_orders_dict
 
 
-    def get_executions_and_commissions(self, reqId=utils.DEFAULT_EXEC_TICKER, execution_filter = ExecutionFilter()):
+    def get_executions_and_commissions(self, reqId=utils.DEFAULT_EXEC_TICKER, execution_filter=ExecutionFilter()):
         """
         Returns a list of all executions done today with commission data
         """
@@ -388,7 +391,6 @@ class TestClient(EClient):
                 print("Wrapper didn't come back with confirmation that order was cancelled!")
                 finished = True
 
-        ## return nothing
 
     def cancel_all_orders(self):
 
@@ -403,10 +405,100 @@ class TestClient(EClient):
 
         while not finished:
             if not self.any_open_orders():
-                ## all orders finally cancelled
+                ## All orders finally cancelled
                 finished = True
             if (datetime.datetime.now() - start_time).seconds > max_wait_seconds:
                 print("Wrapper didn't come back with confirmation that all orders were cancelled!")
                 finished = True
 
-        ## return nothing
+    ############################
+    ## ACCOUNT POSITIONS CODE ##
+    ############################
+    def get_current_positions(self):
+        """
+        Current positions held
+        :return:
+        """
+
+        ## Make a place to store the data we're going to return
+        positions_queue = utils.finishableQueue(self.init_positions())
+
+        ## ask for the data
+        self.reqPositions()
+
+        ## poll until we get a termination or die of boredom
+        max_wait_seconds = 5
+        positions_list = positions_queue.get(timeout=max_wait_seconds)
+
+        while self.wrapper.is_error():
+            print(self.get_error())
+
+        if positions_queue.timed_out():
+            print("Exceeded maximum wait for wrapper to confirm finished whilst getting positions")
+
+        return positions_list
+
+    def _update_accounting_data(self, accountName):
+        """
+        Update the accounting data in the cache
+        :param accountName: account we want to get data for
+        :return: nothing
+        """
+
+        ## Make a place to store the data we're going to return
+        accounting_queue = utils.finishableQueue(self.init_accounts(accountName))
+
+        ## ask for the data
+        self.reqAccountUpdates(True, accountName)
+
+        ## poll until we get a termination or die of boredom
+        max_wait_seconds = 5
+        accounting_list = accounting_queue.get(timeout=max_wait_seconds)
+
+        while self.wrapper.is_error():
+            print(self.get_error())
+
+        if accounting_queue.timed_out():
+            print("Exceeded maximum wait for wrapper to confirm finished whilst getting accounting data")
+
+        # seperate things out, because this is one big queue of data with different things in it
+        accounting_list = utils.list_of_identified_items(accounting_list)
+        seperated_accounting_data = accounting_list.seperate_into_dict()
+
+        ## update the cache with different elements
+        self._account_cache.update_cache(accountName, seperated_accounting_data)
+
+        ## return nothing, information is accessed via get_... methods
+
+
+    def get_accounting_time_from_server(self, accountName):
+        """
+        Get the accounting time from IB server
+        :return: accounting time as served up by IB
+        """
+
+        #All these functions follow the same pattern: check if stale or missing, if not return cache, else update values
+
+        return self._account_cache.get_updated_cache(accountName, utils.ACCOUNT_TIME_FLAG)
+
+
+    def get_accounting_values(self, accountName):
+        """
+        Get the accounting values from IB server
+        :return: accounting values as served up by IB
+        """
+
+        #All these functions follow the same pattern: check if stale, if not return cache, else update values
+
+        return self._account_cache.get_updated_cache(accountName, utils.ACCOUNT_VALUE_FLAG)
+
+
+    def get_accounting_updates(self, accountName):
+        """
+        Get the accounting updates from IB server
+        :return: accounting updates as served up by IB
+        """
+
+        #All these functions follow the same pattern: check if stale, if not return cache, else update values
+
+        return self._account_cache.get_updated_cache(accountName, utils.ACCOUNT_UPDATE_FLAG)
