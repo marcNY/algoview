@@ -12,7 +12,7 @@ class TestWrapper(EWrapper):
 
     def __init__(self):
         self._my_contract_details = {}
-        self._my_historic_data_dict = {}
+        self._my_market_data_dict = {}
 
     ## error handling code
     def init_error(self):
@@ -59,9 +59,9 @@ class TestWrapper(EWrapper):
 
         self._my_contract_details[reqId].put(utils.FINISHED)
 
-    ## Historic data code
+    ## HISTORIC DATA CODE
     def init_historicprices(self, tickerid):
-        historic_data_queue = self._my_historic_data_dict[tickerid] = queue.Queue()
+        historic_data_queue = self._my_market_data_dict[tickerid] = queue.Queue()
 
         return historic_data_queue
 
@@ -72,7 +72,7 @@ class TestWrapper(EWrapper):
         ## Note I'm choosing to ignore barCount, WAP and hasGaps but you could use them if you like
         bardata=(bar.date, bar.open, bar.high, bar.low, bar.close, bar.volume)
 
-        historic_data_dict = self._my_historic_data_dict
+        historic_data_dict = self._my_market_data_dict
 
         ## Add on to the current data
         if tickerid not in historic_data_dict.keys():
@@ -83,12 +83,12 @@ class TestWrapper(EWrapper):
     def historicalDataEnd(self, tickerid, start:str, end:str):
         ## Overriden method
 
-        if tickerid not in self._my_historic_data_dict.keys():
+        if tickerid not in self._my_market_data_dict.keys():
             self.init_historicprices(tickerid)
 
-        self._my_historic_data_dict[tickerid].put(utils.FINISHED)
+        self._my_market_data_dict[tickerid].put(utils.FINISHED)
     
-    ## Live data code
+    ## LIVE DATA CODE
     def init_market_data(self, tickerid):
         market_data_queue = self._my_market_data_dict[tickerid] = queue.Queue()
 

@@ -10,6 +10,8 @@ class TestClient(EClient):
     def __init__(self, wrapper):
         ## Set up with a wrapper inside
         EClient.__init__(self, wrapper)
+        
+        self._market_data_q_dict = {}
 
 
     def resolve_ib_contract(self, ibcontract, reqId=utils.DEFAULT_GET_CONTRACT_ID):
@@ -100,7 +102,7 @@ class TestClient(EClient):
         return historic_data
     
 
-    def start_getting_IB_market_data(self, resolved_ibcontract, tickerid=utils.DEFAULT_GET_CONTRACT_ID):
+    def start_getting_IB_market_data(self, resolved_ibcontract, whatToShow, tickerid=utils.DEFAULT_GET_CONTRACT_ID):
         """
         Kick off market data streaming
         :param resolved_ibcontract: a Contract object
@@ -109,7 +111,7 @@ class TestClient(EClient):
         """
         self._market_data_q_dict[tickerid] = self.wrapper.init_market_data(tickerid)
         # self.reqMktData(tickerid, resolved_ibcontract, "", False, False, [])
-        self.reqRealTimeBars(tickerid, resolved_ibcontract, 5, 'BID', 1, [])
+        self.reqRealTimeBars(tickerid, resolved_ibcontract, 5, whatToShow, 1, [])
 
         return tickerid
 
