@@ -10,13 +10,15 @@ import struct
 import sys
 import threading
 import Queue
-from queuelib import FifoDiskQueue
+from params import paths
+import pika
 
 try:
     import Tkinter
     import tkMessageBox
 except ImportError:
     Tkinter = None
+
 
 # Helper function that sends a message to the webapp.
 
@@ -31,7 +33,7 @@ def send_message(message):
 # Thread that reads messages from the webapp.
 
 
-def read_thread_func(queue, pqueue):
+def read_thread_func(queue, channel):
     message_number = 0
     while 1:
         # Read the message length (first 4 bytes).
@@ -39,10 +41,6 @@ def read_thread_func(queue, pqueue):
         if len(text_length_bytes) == 0:
             if queue:
                 queue.put(None)
-                try:
-                    pqueue.push(None)
-                except Exception as inst:
-                    queue.put(str(inst))
 
             sys.exit(0)
 
@@ -54,10 +52,9 @@ def read_thread_func(queue, pqueue):
 
         if queue:
             queue.put(text)
-            try:
-                pqueue.push(str(text))
-            except Exception as inst:
-                queue.put(str(inst))
+            channel.basic_publish(exchange='',
+                                  routing_key='hello',
+                                  body=text)
         else:
             # In headless mode just send an echo message back.
             send_message('{"echo": %s}' % text)
@@ -116,20 +113,24 @@ def Main():
     if not Tkinter:
         send_message('"Tkinter python module wasn\'t found. Running in headless ' +
                      'mode. Please consider installing Tkinter."')
-        read_thread_func(None)
+        read_thread_func(None, None)
         sys.exit(0)
-
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters('localhost'))
+    channel = connection.channel()
+    channel.queue_declare(queue='hello')
     queue = Queue.Queue()
-    pQueue = FifoDiskQueue("/sync/Sync/projects/algoview/persistent_queue")
+
     main_window = NativeMessagingWindow(queue)
     main_window.master.title('Native Messaging Example')
 
-    thread = threading.Thread(target=read_thread_func, args=(queue, pQueue))
+    thread = threading.Thread(target=read_thread_func,
+                              args=(queue, channel))
     thread.daemon = True
     thread.start()
 
     main_window.mainloop()
-
+    channel.close()
     sys.exit(0)
 
 
