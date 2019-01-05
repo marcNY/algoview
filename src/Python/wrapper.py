@@ -13,6 +13,12 @@ class TestWrapper(EWrapper):
     def __init__(self):
         self._my_contract_details = {}
         self._my_market_data_dict = {}
+        self._my_requested_execution = {}
+
+        ## We set these up as we could get things coming along before we run an init
+        self._my_executions_stream = queue.Queue()
+        self._my_commission_stream = queue.Queue()
+        self._my_open_orders = queue.Queue()
 
     ## error handling code
     def init_error(self):
@@ -58,8 +64,9 @@ class TestWrapper(EWrapper):
             self.init_contractdetails(reqId)
 
         self._my_contract_details[reqId].put(utils.FINISHED)
-
-    ## HISTORIC DATA CODE
+    ########################
+    ## HISTORIC DATA CODE ##
+    ########################
     def init_historicprices(self, tickerid):
         historic_data_queue = self._my_market_data_dict[tickerid] = queue.Queue()
 
@@ -87,8 +94,9 @@ class TestWrapper(EWrapper):
             self.init_historicprices(tickerid)
 
         self._my_market_data_dict[tickerid].put(utils.FINISHED)
-    
-    ## LIVE DATA CODE
+    ####################
+    ## LIVE DATA CODE ##
+    ####################
     def init_market_data(self, tickerid):
         market_data_queue = self._my_market_data_dict[tickerid] = queue.Queue()
 
@@ -133,3 +141,143 @@ class TestWrapper(EWrapper):
 
         this_tick_data = utils.IBtick(self.get_time_stamp(),tickType, value)
         self._my_market_data_dict[tickerid].put(this_tick_data)
+    ##########################
+    ## ORDER PLACEMENT CODE ##
+    ##########################
+    def init_open_orders(self):
+        open_orders_queue = self._my_open_orders = queue.Queue()
+
+        return open_orders_queue
+
+
+    def orderStatus(self, orderId, status, filled, remaining, avgFillPrice, permid,
+                    parentId, lastFillPrice, clientId, whyHeld, mktCapPrice):
+
+        order_details = utils.orderInformation(orderId, status=status, filled=filled,
+                 avgFillPrice=avgFillPrice, permid=permid,
+                 parentId=parentId, lastFillPrice=lastFillPrice, clientId=clientId,
+                                         whyHeld=whyHeld, mktCapPrice=mktCapPrice)
+
+        self._my_open_orders.put(order_details)
+
+
+    def openOrder(self, orderId, contract, order, orderstate):
+        """
+        Tells us about any orders we are working now
+        overriden method
+        """
+
+        order_details = utils.orderInformation(orderId, contract=contract, order=order, orderstate = orderstate)
+        self._my_open_orders.put(order_details)
+
+
+    def openOrderEnd(self):
+        """
+        Finished getting open orders
+        Overriden method
+        """
+
+        self._my_open_orders.put(utils.FINISHED)
+
+
+    """ Executions and commissions
+    requested executions get dropped into single queue: self._my_requested_execution[reqId]
+    Those that arrive as orders are completed without a relevant reqId go into self._my_executions_stream
+    All commissions go into self._my_commission_stream (could be requested or not)
+    The *_stream queues are permanent, and init when the TestWrapper instance is created
+    """
+
+
+    def init_requested_execution_data(self, reqId):
+        execution_queue = self._my_requested_execution[reqId] = queue.Queue()
+
+        return execution_queue
+
+    def access_commission_stream(self):
+        ## Access to the 'permanent' queue for commissions
+
+        return self._my_commission_stream
+
+    def access_executions_stream(self):
+        ## Access to the 'permanent' queue for executions
+
+        return self._my_executions_stream
+
+
+    def commissionReport(self, commreport):
+        """
+        This is called if
+        a) we have submitted an order and a fill has come back
+        b) We have asked for recent fills to be given to us
+        However no reqid is ever passed
+        overriden method
+        :param commreport:
+        :return:
+        """
+
+        commdata = utils.execInformation(commreport.execId, Commission=commreport.commission,
+                        commission_currency = commreport.currency,
+                        realisedpnl = commreport.realizedPNL)
+
+
+        ## there are some other things in commreport you could add
+        ## make sure you add them to the .attributes() field of the execInformation class
+
+        ## These always go into the 'stream' as could be from a request, or a fill thats just happened
+        self._my_commission_stream.put(commdata)
+
+
+    def execDetails(self, reqId, contract, execution):
+        """
+        This is called if
+        a) we have submitted an order and a fill has come back (in which case reqId will be FILL_CODE)
+        b) We have asked for recent fills to be given to us (reqId will be
+        See API docs for more details
+        """
+        ## overriden method
+
+        execdata = utils.execInformation(execution.execId, contract=contract,
+                                         ClientId=execution.clientId, OrderId=execution.orderId,
+                                         time=execution.time, AvgPrice=execution.avgPrice,
+                                         AcctNumber=execution.acctNumber, Shares=execution.shares,
+                                         Price = execution.price)
+
+        ## there are some other things in execution you could add
+        ## make sure you add them to the .attributes() field of the execInformation class
+
+        reqId = int(reqId)
+
+        ## We eithier put this into a stream if its just happened, or store it for a specific request
+        if reqId==utils.FILL_CODE:
+            self._my_executions_stream.put(execdata)
+        else:
+            self._my_requested_execution[reqId].put(execdata)
+
+
+
+    def execDetailsEnd(self, reqId):
+        """
+        No more orders to look at if execution details requested
+        """
+        self._my_requested_execution[reqId].put(utils.FINISHED)
+
+
+    ## order ids
+    def init_nextvalidid(self):
+
+        orderid_queue = self._my_orderid_data = queue.Queue()
+
+        return orderid_queue
+
+    def nextValidId(self, orderId):
+        """
+        Give the next valid order id
+        Note this doesn't 'burn' the ID; if you call again without executing the next ID will be the same
+        If you're executing through multiple clients you are probably better off having an explicit counter
+        """
+        if getattr(self, '_my_orderid_data', None) is None:
+            ## getting an ID which we haven't asked for
+            ## this happens, IB server just sends this along occassionally
+            self.init_nextvalidid()
+
+        self._my_orderid_data.put(orderId)

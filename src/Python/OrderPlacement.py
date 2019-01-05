@@ -734,7 +734,7 @@ class TestClient(EClient):
 
         ## Cancels all orders, from all client ids.
         ## if you don't want to do this, then instead run .cancel_order over named IDs
-        app.reqGlobalCancel()
+        self.reqGlobalCancel()
 
         start_time=datetime.datetime.now()
         MAX_WAIT_TIME_SECONDS = 10
