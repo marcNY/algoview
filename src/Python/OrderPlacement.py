@@ -1,5 +1,3 @@
-# Replicate the historical data example
-
 from ibapi.wrapper import EWrapper
 from ibapi.client import EClient
 from ibapi.contract import Contract as IBcontract
@@ -773,10 +771,8 @@ if __name__ == '__main__':
 
     app = TestApp("127.0.0.1", 7497, 3)
 
-    ## lets get prices for this
     ibcontract = IBcontract()
     ibcontract.secType = "CASH"
-    # ibcontract.lastTradeDateOrContractMonth="201903"
     ibcontract.symbol = 'EUR'
     ibcontract.currency = 'USD'
     ibcontract.exchange = 'IDEALPRO'
