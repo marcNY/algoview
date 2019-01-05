@@ -194,7 +194,7 @@ class TestWrapper(EWrapper):
 
         self._my_contract_details[reqId].put(FINISHED)
 
-    # market data
+    # live market data
     def init_market_data(self, tickerid):
         market_data_queue = self._my_market_data_dict[tickerid] = queue.Queue()
 
@@ -239,8 +239,7 @@ class TestWrapper(EWrapper):
 
         this_tick_data=IBtick(self.get_time_stamp(),tickType, value)
         self._my_market_data_dict[tickerid].put(this_tick_data)
-
-
+        
 
 class TestClient(EClient):
     """
@@ -299,9 +298,9 @@ class TestClient(EClient):
         :param tickerid: the identifier for the request
         :return: tickerid
         """
-
         self._market_data_q_dict[tickerid] = self.wrapper.init_market_data(tickerid)
-        self.reqMktData(tickerid, resolved_ibcontract, "", False, False, [])
+        # self.reqMktData(tickerid, resolved_ibcontract, "", False, False, [])
+        self.reqRealTimeBars(tickerid, resolved_ibcontract, 5, 'BID', 1, [])
 
         return tickerid
 
@@ -334,7 +333,7 @@ class TestClient(EClient):
         """
 
         ## how long to wait for next item
-        MAX_WAIT_MARKETDATEITEM = 5
+        MAX_WAIT_MARKETDATAITEM = 5
         market_data_q = self._market_data_q_dict[tickerid]
 
         market_data=[]
@@ -342,7 +341,7 @@ class TestClient(EClient):
 
         while not finished:
             try:
-                market_data.append(market_data_q.get(timeout=MAX_WAIT_MARKETDATEITEM))
+                market_data.append(market_data_q.get(timeout=MAX_WAIT_MARKETDATAITEM))
             except queue.Empty:
                 ## no more data
                 finished=True

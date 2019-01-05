@@ -4,19 +4,28 @@ from ibapi.execution import ExecutionFilter
 from threading import Thread
 import numpy as np, pandas as pd, datetime as dt, time
 import queue, importlib, tools, collections
+from wrapper import TestWrapper
+from client import TestClient
+
 
 TV_to_IB = {'EURUSD' : {'symbol' : 'EUR', 'secType' : 'CASH', 'currency' : 'USD', 'exchange' : 'IDEALPRO', 
-                        'expiry' : None, 'multiplier' : 1},
-            'ES1!, 1' : {'symbol' : 'ES', 'secType' : 'FUT', 'currency' : 'USD', 'exchange' : 'GLOBEX_IND',
-                         'expiry' : '201903', 'multiplier' : 50},
+                        'expiry' : None},
+            'ES1!, 1' : {'symbol' : 'ES', 'secType' : 'FUT', 'currency' : 'USD', 'exchange' : 'GLOBEX',
+                         'expiry' : '201903'},
+            'SPY' : {'symbol' : 'SPY', 'secType' : 'STK', 'currency' : 'USD', 'exchange' : 'ARCA',
+                     'expiry' : None},
             'CL1!, 1' : {'symbol' : 'CL', 'secType' : 'FUT', 'currency' : 'USD', 'exchange' : 'NYMEX',
-                         'expiry' : '201901', 'multiplier' : 100},
+                         'expiry' : '201902'},
+            'USO' : {'symbol' : 'USO', 'secType' : 'STK', 'currency' : 'USD', 'exchange' : 'ARCA',
+                         'expiry' : None},
             'GC1!, 1' : {'symbol' : 'GC', 'secType' : 'FUT', 'currency' : 'USD', 'exchange' : 'NYMEX',
-                         'expiry' : '201902', 'multiplier' : 100},
+                         'expiry' : '201902'},
+            'GLD' : {'symbol' : 'GLD', 'secType' : 'STK', 'currency' : 'USD', 'exchange' : 'ARCA',
+                     'expiry' : None},
             'TY1!, 1' : {'symbol' : 'ZN', 'secType' : 'FUT', 'currency' : 'USD', 'exchange' : 'ECBOT',
-                         'expiry' : '201903', 'multiplier': 100},
+                         'expiry' : '201903'},
             'IBKR' : {'symbol' : 'IBKR', 'secType' : 'STK', 'currency' : 'USD', 'exchange' : 'ISLAND',
-                      'expiry' : None, 'multiplier' : 1},
+                      'expiry' : None},
            }
 
 def parse_message(app, underlying, message):
@@ -83,7 +92,7 @@ def get_hist_data(app, ibcontract, durationStr='2 D', barSizeSetting='1 hour'):
     return historic_data
 
 
-def get_unit(app, ibcontract, unit_size, initial_capital, timeframe):
+def calc_unit(app, ibcontract, unit_size, initial_capital, timeframe):
     '''
     INPUTS
     unit_size: % of initial_capital(USD) allocated
@@ -106,3 +115,18 @@ def get_unit(app, ibcontract, unit_size, initial_capital, timeframe):
     unit = ( unit_size / 100 * initial_capital ) / ( N * mult )
     
     return unit
+
+
+class TestApp(TestWrapper, TestClient):
+    def __init__(self, ipaddress, portid, clientid):
+        TestWrapper.__init__(self)
+        TestClient.__init__(self, wrapper=self)
+
+        self.connect(ipaddress, portid, clientid)
+
+        thread = Thread(target = self.run)
+        thread.start()
+
+        setattr(self, "_thread", thread)
+
+        self.init_error()
