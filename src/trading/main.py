@@ -1,7 +1,7 @@
 import trading.functions as fn
 
 # Temporary, should be replaced by TradingView alert
-underlying = 'XLV'
+underlying = 'EURUSD'
 msg = 'n=entryL1 d=long t=m p=0 q=1 u=1 c=10000 b=1h'
 
 
@@ -15,9 +15,9 @@ def execute_message(underlying, msg):
         print("place_new_IB_order")
         orderid1 = app.place_new_IB_order(ibcontract, order1, orderid=None)
         app.disconnect()
-    except Exception:
+    except:
         app.disconnect()
-        raise Exception
+        raise
     return(orderid1)
 
 
