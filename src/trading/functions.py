@@ -9,9 +9,9 @@ import time
 import queue
 import importlib
 import collections
-import utils
-from wrapper import TestWrapper
-from client import TestClient
+import trading.utils as utils
+from trading.wrapper import TestWrapper
+from trading.client import TestClient
 
 
 TV_to_IB = {'EURUSD': {'symbol': 'EUR', 'secType': 'CASH', 'currency': 'USD', 'exchange': 'IDEALPRO',
