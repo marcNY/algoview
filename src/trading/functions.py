@@ -31,7 +31,27 @@ TV_to_IB = {'EURUSD' : {'symbol' : 'EUR', 'secType' : 'CASH', 'currency' : 'USD'
            }
 
 
+def reconnect(app=None):
+    try:
+        if app is None:
+            app = TestApp("127.0.0.1", 4001, 1)
+        elif app.isConnected()==False:
+            app.connect("127.0.0.1", 4001, 1)
+            print('App reconnected')
+        else:
+            print('App already connected')
+    except NameError:
+        app = TestApp("127.0.0.1", 4001, 1)
+        if app.isConnected()==False:
+            print('IB Gateway not connected to IB Server')
+        else:
+            print('App instantiated & connected')
+    
+    return app
+
+
 def make_contract(app, underlying):
+    reconnect(app)
     if underlying not in TV_to_IB:
         return 'Error: no details available for this underlying'
     ibcontract = utils.create_contract(TV_to_IB[underlying]['symbol'], TV_to_IB[underlying]['secType'], 
@@ -43,6 +63,7 @@ def make_contract(app, underlying):
 
 
 def make_order(app, ibcontract, minTick, message):
+    reconnect(app)
     order_params = { k:v for k,v in (x.split('=') for x in message.split(' ')) }
     order = Order()
     if order_params['t']=='l':
