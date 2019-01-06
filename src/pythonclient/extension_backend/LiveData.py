@@ -1,9 +1,13 @@
 from ibapi.wrapper import EWrapper
 from ibapi.client import EClient
 from ibapi.contract import Contract as IBcontract
+
+import time
 from threading import Thread
-import queue, datetime, time
-import pandas as pd, numpy as np
+import queue
+import datetime
+import pandas as pd
+import numpy as np
 
 DEFAULT_MARKET_DATA_ID=50
 DEFAULT_GET_CONTRACT_ID=43
@@ -23,6 +27,7 @@ class finishableQueue(object):
     def get(self, timeout):
         """
         Returns a list of queue elements once timeout is finished, or a FINISHED flag is received in the queue
+
         :param timeout: how long to wait before giving up
         :return: list of queue elements
         """
@@ -141,7 +146,9 @@ class IBtick(tick):
 class TestWrapper(EWrapper):
     """
     The wrapper deals with the action coming back from the IB gateway or TWS instance
+
     We override methods in EWrapper that will get called when this action happens, like currentTime
+
     Extra methods are added as we need to store the results in this object
     """
 
@@ -194,7 +201,7 @@ class TestWrapper(EWrapper):
 
         self._my_contract_details[reqId].put(FINISHED)
 
-    # live market data
+    # market data
     def init_market_data(self, tickerid):
         market_data_queue = self._my_market_data_dict[tickerid] = queue.Queue()
 
@@ -239,11 +246,13 @@ class TestWrapper(EWrapper):
 
         this_tick_data=IBtick(self.get_time_stamp(),tickType, value)
         self._my_market_data_dict[tickerid].put(this_tick_data)
-        
+
+
 
 class TestClient(EClient):
     """
     The client method
+
     We don't override native methods, but instead call them from our own wrappers
     """
     def __init__(self, wrapper):
@@ -262,13 +271,11 @@ class TestClient(EClient):
         ## Make a place to store the data we're going to return
         contract_details_queue = finishableQueue(self.init_contractdetails(reqId))
 
-        print("Getting full contract details from the server... ")
-
         self.reqContractDetails(reqId, ibcontract)
 
         ## Run until we get a valid contract(s) or get bored waiting
-        MAX_WAIT_SECONDS = 10
-        new_contract_details = contract_details_queue.get(timeout = MAX_WAIT_SECONDS)
+        max_wait_seconds = 5
+        new_contract_details = contract_details_queue.get(timeout=max_wait_seconds)
 
         while self.wrapper.is_error():
             print(self.get_error())
@@ -298,9 +305,9 @@ class TestClient(EClient):
         :param tickerid: the identifier for the request
         :return: tickerid
         """
+
         self._market_data_q_dict[tickerid] = self.wrapper.init_market_data(tickerid)
-        # self.reqMktData(tickerid, resolved_ibcontract, "", False, False, [])
-        self.reqRealTimeBars(tickerid, resolved_ibcontract, 5, 'BID', 1, [])
+        self.reqMktData(tickerid, resolved_ibcontract, "", False, False, [])
 
         return tickerid
 
@@ -333,7 +340,7 @@ class TestClient(EClient):
         """
 
         ## how long to wait for next item
-        MAX_WAIT_MARKETDATAITEM = 5
+        MAX_WAIT_MARKETDATEITEM = 5
         market_data_q = self._market_data_q_dict[tickerid]
 
         market_data=[]
@@ -341,7 +348,7 @@ class TestClient(EClient):
 
         while not finished:
             try:
-                market_data.append(market_data_q.get(timeout=MAX_WAIT_MARKETDATAITEM))
+                market_data.append(market_data_q.get(timeout=MAX_WAIT_MARKETDATEITEM))
             except queue.Empty:
                 ## no more data
                 finished=True
@@ -366,15 +373,15 @@ class TestApp(TestWrapper, TestClient):
 
 if __name__ == '__main__':
 
-    app = TestApp("127.0.0.1", 7497, 2)
+    app = TestApp("127.0.0.1", 4001, 2)
 
     ibcontract = IBcontract()
     ibcontract.secType = "CASH"
-    # ibcontract.lastTradeDateOrContractMonth = "201903"
-    ibcontract.symbol = "EUR"
-    ibcontract.currency = "USD"
-    ibcontract.exchange = "IDEALPRO"
+    ibcontract.symbol="EUR"
+    ibcontract.currency="USD"
+    ibcontract.exchange="IDEALPRO"
 
+    ## resolve the contract
     resolved_ibcontract, minTick = app.resolve_ib_contract(ibcontract)
 
     tickerid = app.start_getting_IB_market_data(resolved_ibcontract)

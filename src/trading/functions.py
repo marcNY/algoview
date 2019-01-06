@@ -31,20 +31,7 @@ TV_to_IB = {'EURUSD' : {'symbol' : 'EUR', 'secType' : 'CASH', 'currency' : 'USD'
            }
 
 
-def reconnect(app):
-    try:
-        if app.isConnected()==False:
-            app.connect("127.0.0.1", 7496, 1)
-            time.sleep(1)
-    except NameError: app = TestApp("127.0.0.1", 7496, 1)
-    except AttributeError:
-        app.disconnect()
-        time.sleep(1)
-        app.connect("127.0.0.1", 7496, 1)
-
-
 def make_contract(app, underlying):
-    reconnect(app)
     if underlying not in TV_to_IB:
         return 'Error: no details available for this underlying'
     ibcontract = utils.create_contract(TV_to_IB[underlying]['symbol'], TV_to_IB[underlying]['secType'], 
@@ -56,7 +43,6 @@ def make_contract(app, underlying):
 
 
 def make_order(app, ibcontract, minTick, message):
-    reconnect(app)
     order_params = { k:v for k,v in (x.split('=') for x in message.split(' ')) }
     order = Order()
     if order_params['t']=='l':
@@ -99,7 +85,6 @@ def calc_unit(app, ibcontract, unit_size, initial_capital, barSize):
     OUTPUTS
     unit: number of contracts to be traded on each entry
     '''
-    reconnect(app)
     durationStr, barSizeSetting = utils.calc_bar_dur(barSize)
     hist_mkt_data = app.get_IB_historical_data(ibcontract, durationStr, barSizeSetting)
     n = len(hist_mkt_data)
@@ -118,13 +103,11 @@ def calc_unit(app, ibcontract, unit_size, initial_capital, barSize):
 
 
 def get_holdings(app, ibcontract):
-    reconnect(app)
     holdings = app.get_current_positions()
     return holdings
 
 
 def get_quotes(app, ibcontract):
-    reconnect(app)
     tickerid = app.start_getting_IB_market_data(ibcontract, whatToShow='BID')
     time.sleep(5)
     best_bid = app.stop_getting_IB_market_data(tickerid)

@@ -16,6 +16,7 @@ class TestWrapper(EWrapper):
         self._my_market_data_dict = {}
         self._my_requested_execution = {}
         self._my_accounts = {}
+        self.init_error()
 
         ## We set these up as we could get things coming along before we run an init
         self._my_executions_stream = queue.Queue()

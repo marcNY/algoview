@@ -33,7 +33,7 @@ class TestClient(EClient):
         self.reqContractDetails(reqId, ibcontract)
 
         ## Run until we get a valid contract(s) or get bored waiting
-        max_wait_seconds = 2
+        max_wait_seconds = 5
         new_contract_details = contract_details_queue.get(timeout=max_wait_seconds)
 
         while self.wrapper.is_error():
@@ -427,7 +427,7 @@ class TestClient(EClient):
         self.reqPositions()
 
         ## poll until we get a termination or die of boredom
-        max_wait_seconds = 5
+        max_wait_seconds = 8
         positions_list = positions_queue.get(timeout=max_wait_seconds)
 
         while self.wrapper.is_error():

@@ -3,17 +3,16 @@ from ibapi.order import Order
 from ibapi.execution import ExecutionFilter
 from threading import Thread
 import numpy as np, pandas as pd, datetime as dt, time
-import queue, importlib, collections, utils, functions
+import queue, importlib, collections, utils, functions as fn
 
-## Initiate connection with IB server if not already connected, instanciate app if not already instantiated
+## Temporary, should be replaced by TradingView alert
+underlying = 'XLV'
+msg = 'n=entryL1 d=long t=m p=0 q=1 u=1 c=10000 b=1h'
 
-app = TestApp("127.0.0.1", 7496, 1)
-try:
-    if app.isConnected()==False:
-        app.connect("127.0.0.1", 7496, 1)
-        time.sleep(1)
-except NameError: app = TestApp("127.0.0.1", 7496, 1)
+fn.reconnect()
 
 ibcontract, minTick = fn.make_contract(app, underlying)
 order1 = fn.make_order(app, ibcontract, minTick, msg)
-orderid1 = place_new_IB_order(app, ibcontract, order1, orderid=None)
+# orderid1 = place_new_IB_order(app, ibcontract, order1, orderid=None)
+
+app.disconnect()
