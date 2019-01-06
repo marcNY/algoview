@@ -69,7 +69,7 @@ def make_order(app, ibcontract, minTick, message):
     if order_params['t']=='l':
         order.orderType = "LMT"
         order.tif = 'DAY'
-        best_bid, best_offer = app.get_quotes(ibcontract)
+        best_bid, best_offer = get_quotes(app, ibcontract)
         if order_params['d']=='long':
             order.action = "BUY"
             order.lmtPrice = best_bid + int(order_params['p']) * minTick
@@ -89,7 +89,7 @@ def make_order(app, ibcontract, minTick, message):
         unit = calc_unit(app, ibcontract, order_params['u'], order_params['c'], order_params['b'])
         order.totalQuantity = q * unit
     else:
-        order.totalQuantity = app.get_holdings(ibcontract)
+        order.totalQuantity = get_pos(app, ibcontract)
     
     order.transmit = True
     print(order)
@@ -123,9 +123,19 @@ def calc_unit(app, ibcontract, unit_size, initial_capital, barSize):
     return unit
 
 
-def get_holdings(app, ibcontract):
+def get_pos(app, ibcontract):
     holdings = app.get_current_positions()
-    return holdings
+    pos = 'NaN'
+    
+    for item in holdings:
+        if ibcontract.conId==item[1].conId:
+            pos = item[2]
+
+    if pos=='NaN':
+        pos = 0
+        print('No position to exit')
+
+    return pos
 
 
 def get_quotes(app, ibcontract):

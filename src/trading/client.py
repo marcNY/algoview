@@ -129,10 +129,11 @@ class TestClient(EClient):
         """
 
         ## native EClient method
-        self.cancelMktData(tickerid)
+        # self.cancelMktData(tickerid)
+        self.cancelRealTimeBars(tickerid)
 
         ## Sometimes a lag whilst this happens, this prevents 'orphan' ticks appearing
-        time.sleep(5)
+        time.sleep(3)
 
         market_data = self.get_IB_market_data(tickerid)
 
