@@ -35,9 +35,9 @@ chrome.runtime.onStartup.addListener(function() {
   reset();
 });
 
-function listenPopup(msg) {
-  popup_callback();
+function listenPopup(msg, portFrom) {
   if (msg.type == "POPUP_ALERTS") {
+    console.log("Alert 1 received");
     portFrom.postMessage([alerts_db, status_listen]);
   } else if (msg.type == "POPUP_GROUPS")
     portFrom.postMessage([group(), status_listen]);
@@ -48,6 +48,7 @@ function listenPopup(msg) {
     flush();
     portFrom.postMessage([alerts_db, status_listen]);
   } else if (msg.type == "POPUP_EVENT") {
+    console.log("Alert 2 received");
     status_listen = !status_listen;
     if (status_listen == false) {
       clearInterval(thread_poll_id);
@@ -58,6 +59,7 @@ function listenPopup(msg) {
       tabManager();
       console.log("Alerts resumed");
     }
+    portFrom.postMessage([alerts_db, status_listen]);
   } else if (msg.type == "SEND_NATIVE") {
     sendNativeMessage(msg.value);
   }
@@ -105,7 +107,7 @@ chrome.runtime.onConnect.addListener(function(portFrom) {
       thread_poll_id = setInterval(poll, TIME_POLL);
     }
   } else if (portFrom.name === "popup") {
-    portFrom.onMessage.addListener(msg => listenPopup(msg));
+    portFrom.onMessage.addListener(msg => listenPopup(msg, portFrom));
   }
 });
 
@@ -439,5 +441,3 @@ function updateAlert(id, status) {
     }
   }
 }
-
-function popup_callback() {}
