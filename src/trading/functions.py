@@ -37,19 +37,22 @@ TV_to_IB = {'EURUSD': {'symbol': 'EUR', 'secType': 'CASH', 'currency': 'USD', 'e
             }
 
 
-def reconnect(app=None):
+def reconnect(app=None, client=1):
     try:
         if app is None:
-            app = TestApp("127.0.0.1", 4001, 1)
+            app = TestApp("127.0.0.1", 4001, client)
         if app.isConnected() == False:
-            app.connect("127.0.0.1", 4001, 1)
-            print('App reconnected')
+            app.connect("127.0.0.1", 4001, client)
+            if app.isConnected() == False:
+                print('IB Gateway not connected')
+            else:
+                print('App reconnected')
         else:
             print('App already connected')
     except NameError:
-        app = TestApp("127.0.0.1", 4001, 1)
+        app = TestApp("127.0.0.1", 4001, client)
         if app.isConnected() == False:
-            print('IB Gateway not connected to IB Server')
+            print('IB Gateway not connected')
         else:
             print('App instantiated & connected')
 
@@ -148,11 +151,12 @@ def get_pos(app, ibcontract):
 
 
 def get_quotes(app, ibcontract):
+    reconnect(app)
     tickerid = app.start_getting_IB_market_data(ibcontract, whatToShow='BID')
-    time.sleep(5)
-    best_bid = app.stop_getting_IB_market_data(tickerid)
+    time.sleep(1)
+    quotes = app.stop_getting_IB_market_data(tickerid)
 
-    return best_bid  # , best_offer
+    return float(quotes.bid_price), float(quotes.ask_price)
 
 
 class TestApp(TestWrapper, TestClient):

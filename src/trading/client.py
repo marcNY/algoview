@@ -118,18 +118,22 @@ class TestClient(EClient):
     ## LIVE MARKET DATA CODE ##
     ###########################
 
-    def start_getting_IB_market_data(self, resolved_ibcontract, whatToShow, tickerid=utils.DEFAULT_GET_CONTRACT_ID):
+    def start_getting_IB_market_data(self, resolved_ibcontract, whatToShow=None, tickerid=utils.DEFAULT_GET_CONTRACT_ID):
         """
         Kick off market data streaming
         :param resolved_ibcontract: a Contract object
         :param tickerid: the identifier for the request
         :return: tickerid
         """
+        
+        useRTH = 0
+        if resolved_ibcontract.secType == 'STK':
+            useRTH = 1
+        
         self._market_data_q_dict[tickerid] = self.wrapper.init_market_data(
             tickerid)
-        # self.reqMktData(tickerid, resolved_ibcontract, "", False, False, [])
-        self.reqRealTimeBars(tickerid, resolved_ibcontract,
-                             5, whatToShow, 1, [])
+        self.reqMktData(tickerid, resolved_ibcontract, '1', True, False, [])
+        # self.reqRealTimeBars(tickerid, resolved_ibcontract, 5, whatToShow, useRTH, [])
 
         return tickerid
 
@@ -141,11 +145,11 @@ class TestClient(EClient):
         """
 
         # native EClient method
-        # self.cancelMktData(tickerid)
-        self.cancelRealTimeBars(tickerid)
+        self.cancelMktData(tickerid)
+        # self.cancelRealTimeBars(tickerid)
 
         # Sometimes a lag whilst this happens, this prevents 'orphan' ticks appearing
-        time.sleep(3)
+        time.sleep(1)
 
         market_data = self.get_IB_market_data(tickerid)
 
@@ -163,7 +167,7 @@ class TestClient(EClient):
         """
 
         # how long to wait for next item
-        max_wait_marketdataitem = 5
+        max_wait_marketdataitem = 1
         market_data_q = self._market_data_q_dict[tickerid]
 
         market_data = []
@@ -171,13 +175,14 @@ class TestClient(EClient):
 
         while not finished:
             try:
-                market_data.append(market_data_q.get(
-                    timeout=max_wait_marketdataitem))
+                market_data.append(market_data_q.get(timeout=max_wait_marketdataitem))
             except queue.Empty:
                 # no more data
                 finished = True
+        
+        quotes = utils.stream_of_ticks(market_data).as_pdDataFrame().resample("1S").last()[["bid_size", "bid_price", "ask_price", "ask_size"]]
 
-        return utils.stream_of_ticks(market_data)
+        return quotes
 
     ##########################
     ## ORDER PLACEMENT CODE ##
