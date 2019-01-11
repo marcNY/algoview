@@ -98,9 +98,9 @@ def make_order(app, ibcontract, minTick, message):
     if q > 0:
         unit = calc_unit(
             app, ibcontract, order_params['u'], order_params['c'], order_params['b'])
-        order.totalQuantity = q * unit
+        order.totalQuantity = int(q * unit)
     else:
-        order.totalQuantity = get_pos(app, ibcontract)
+        order.totalQuantity = int(get_pos(app, ibcontract))
 
     order.transmit = True
     print(order)
@@ -130,7 +130,7 @@ def calc_unit(app, ibcontract, unit_size, initial_capital, barSize):
         mult = 1.0
     else:
         mult = ibcontract.multiplier
-    unit = (float(unit_size) / 100 * float(initial_capital)) / (N * mult)
+    unit = float(unit_size) / 100 * float(initial_capital) / (N * mult)
 
     return unit
 
@@ -157,6 +157,61 @@ def get_quotes(app, ibcontract):
     quotes = app.stop_getting_IB_market_data(tickerid)
 
     return float(quotes.bid_price), float(quotes.ask_price)
+
+
+def get_accountName(app):
+    reconnect(app)
+    positions_list = app.get_current_positions()
+    accountName = positions_list[0][0]
+    
+    return accountName
+
+
+def get_execDetails(app):
+    reconnect(app)
+    exec_dict = app.get_executions_and_commissions()
+    exec_list = [str(v) for k,v in exec_dict.items()]
+    exec_tuples = [] 
+    for item in exec_list:
+        conId = int(item[item.find('Execution')+22:item.find(',')])
+        time = item[item.find('time')+6:item.find('AvgPrice')-1]
+        OrderId = int(item[item.find('OrderId')+9:item.find('time')-1])
+        AvgPrice = float(item[item.find('AvgPrice')+10:item.find('Price', item.find('AvgPrice')+5)-1])
+        if len(item)>item.find('Shares')+15:
+            Shares = int(float(item[item.find('Shares')+8:item.find('Commission')-1]))
+        else:
+            Shares = int(float(item[item.find('Shares')+8:len(item)]))
+        ClientId = int(item[item.find('ClientId')+10:item.find('OrderId')-1])
+        exec_tuples.append( (conId, time, OrderId, AvgPrice, Shares, ClientId) )
+    exec_df = pd.DataFrame(exec_tuples, columns=['conId', 'time', 'OrderId', 'AvgPrice', 'Shares', 'ClientId'])
+    exec_df.set_index('time', inplace=True)
+    
+    return exec_df
+        
+
+def check_fill(app, order1, orderid1):
+    reconnect(app)
+    order_filled = False
+    counter = 0
+    Shares = 0
+    while order_filled == False and counter < 5:
+        counter += 1
+        exec_dict = app.get_executions_and_commissions()
+        exec_list = [str(v) for k,v in exec_dict.items()]
+        for item in exec_list:
+            if int(item[item.find('OrderId')+9:item.find('time')-1]) == orderid1:
+                if len(item)>item.find('Shares')+15:
+                    Shares += int(float(item[item.find('Shares')+8:item.find('Commission')-1]))
+                else:
+                    Shares += int(float(item[item.find('Shares')+8:len(item)]))
+                if Shares == order1.totalQuantity:
+                    order_filled = True
+        time.sleep(1)
+    
+    if order_filled == True:
+        print('== ORDER FILLED ==')
+    else:
+        print('WARNING: ORDER NOT FILLED')
 
 
 class TestApp(TestWrapper, TestClient):
