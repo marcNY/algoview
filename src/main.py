@@ -4,20 +4,22 @@ import json
 import time
 # function called when receiving a message from amqp
 
+# TODO: cancel message execution if received more than 30 seconds before
+
 
 def callback(ch, method, properties, body):
-
     order_message = decode_message(body)['value']
     underlying = order_message['underlying']
     msg = order_message['msg']
     start_time = time.time()
-    order_id = tradelib.execute_message(underlying, msg)
+    # We get a dictionnary out of executing message
+    output = tradelib.execute_message(underlying, msg)
     end_time = time.time()
 
-    order_message['order_id'] = order_id
     order_message['start_execution_time'] = start_time
     order_message['end_execution_time'] = end_time
-
+    # we merge both dictionaries
+    order_message = {**order_message, **output}
     ch.basic_publish(exchange='',
                      routing_key='executed_signals',
                      body=json.dumps(order_message))
