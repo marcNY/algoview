@@ -62,6 +62,8 @@ function listenPopup(msg, portFrom) {
     portFrom.postMessage([alerts_db, status_listen]);
   } else if (msg.type == "SEND_NATIVE") {
     sendNativeMessage(msg.value);
+    console.log(portFrom);
+    portFrom.postMessage([alerts_db, status_listen]);
   }
 }
 // New page / popup ================================================================================
@@ -164,7 +166,7 @@ function status() {
   if (status_listen == false) return;
   ok = 0;
   for (var j = 0; j < tab_ids.length && ok == 0; j++) {
-    console.log(j + " " + tab_n_polls[j] + " " + tab_n_recvs[j]);
+    //console.log(j + " " + tab_n_polls[j] + " " + tab_n_recvs[j]);
     if (tab_n_polls[j] == tab_n_recvs[j]) ok = 1;
   }
   if (ok == 1) {

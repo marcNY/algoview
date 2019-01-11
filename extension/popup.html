@@ -1,25 +1,61 @@
 <html>
-    <head>
-        <link rel="stylesheet" href="css/style.css">
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
-    </head>
-    <body>
-        <center><b>TradingView Alerts</b></center>
-        <img src='pic.png' id='defImage' class="center">
-        <p><div id="popup_text" class="center3"><center>No alerts to show</center></div></p>
-        <div>
-            <button type="button" class="btn btn-outline-primary" id='ButtonPoll'>Pause</button>       
-            <button type="button" class="btn btn-outline-primary" id='ButtonGroup'>Group</button>
-            <button type="button" class="btn btn-outline-warning" id='ButtonClean'>Clean</button>
-            <button type="button" class="btn btn-outline-danger" id='ButtonFlush'>Flush</button>
-            <hr/>
-            <input id="message_to_host" type="text" class="form-control" placeholder="Message to Native App">
-            <button id="ButtonSendNative" type="button" class="btn btn-outline-secondary">Send</button>
+  <head>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+      integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <center><b>TradingView Alerts</b></center>
+    <img src="pic.png" id="defImage" class="center" />
+    <div id="popup_array">
+      <table id="message_table" class="table table-bordered">
+        <thead>
+          <tr>
+            <th scope="col">Title</th>
+            <th scope="col">Status</th>
+            <th scope="col">Description</th>
+            <th scope="col">#</th>
+            <th scope="col">Timestamp</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div>
+      <button type="button" class="btn btn-outline-primary" id="ButtonPause">
+        Pause
+      </button>
+      <button type="button" class="btn btn-outline-primary" id="ButtonGroup">
+        Group
+      </button>
+      <button type="button" class="btn btn-outline-warning" id="ButtonClean">
+        Clean
+      </button>
+      <button type="button" class="btn btn-outline-danger" id="ButtonFlush">
+        Flush
+      </button>
+      <hr />
+      <input
+        id="message_to_host"
+        type="text"
+        class="form-control"
+        placeholder="Message to Native App"
+      />
+      <button
+        id="ButtonSendNative"
+        type="button"
+        class="btn btn-outline-secondary"
+      >
+        Send
+      </button>
+    </div>
 
-        </div>
-        
-        <script src="lib/jquery-3.3.1.min.js"></script>
-        <script src="messaging.js"></script>
-        <script src="popup.js"></script>
-    </body>
+    <script src="lib/jquery-3.3.1.min.js"></script>
+    <script src="messaging.js"></script>
+    <script src="popup.js"></script>
+  </body>
 </html>
