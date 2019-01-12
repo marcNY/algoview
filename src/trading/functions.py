@@ -2,42 +2,19 @@ from ibapi.contract import Contract as IBcontract
 from ibapi.order import Order
 from ibapi.execution import ExecutionFilter
 from threading import Thread
-import numpy as np
-import pandas as pd
-import datetime as dt
-import time
-import queue
-import importlib
-import collections
-import trading.utils as utils
+import numpy as np, pandas as pd, datetime as dt
+import time, queue, importlib, collections
+import trading.utils as utils, database as db
 from trading.wrapper import TestWrapper
 from trading.client import TestClient
 
-
-TV_to_IB = {'EURUSD': {'symbol': 'EUR', 'secType': 'CASH', 'currency': 'USD', 'exchange': 'IDEALPRO',
-                       'expiry': None},
-            'ES1!, 1': {'symbol': 'ES', 'secType': 'FUT', 'currency': 'USD', 'exchange': 'GLOBEX',
-                        'expiry': '201903'},
-            'SPY': {'symbol': 'SPY', 'secType': 'STK', 'currency': 'USD', 'exchange': 'ARCA',
-                    'expiry': None},
-            'CL1!, 1': {'symbol': 'CL', 'secType': 'FUT', 'currency': 'USD', 'exchange': 'NYMEX',
-                        'expiry': '201902'},
-            'USO': {'symbol': 'USO', 'secType': 'STK', 'currency': 'USD', 'exchange': 'ARCA',
-                    'expiry': None},
-            'GC1!, 1': {'symbol': 'GC', 'secType': 'FUT', 'currency': 'USD', 'exchange': 'NYMEX',
-                        'expiry': '201902'},
-            'GLD': {'symbol': 'GLD', 'secType': 'STK', 'currency': 'USD', 'exchange': 'ARCA',
-                    'expiry': None},
-            'TY1!, 1': {'symbol': 'ZN', 'secType': 'FUT', 'currency': 'USD', 'exchange': 'ECBOT',
-                        'expiry': '201903'},
-            'IBKR': {'symbol': 'IBKR', 'secType': 'STK', 'currency': 'USD', 'exchange': 'ISLAND',
-                     'expiry': None},
-            'XLV': {'symbol': 'XLV', 'secType': 'STK', 'currency': 'USD', 'exchange': 'ISLAND',
-                    'expiry': None},
-            }
+TV_to_IB = db.TV_to_IB
+conId_to_ul = db.conId_to_ul
 
 
 def reconnect(app=None, client=1):
+    exception = None
+    info = None
     try:
         if app is None:
             app = TestApp("127.0.0.1", 4001, client)
@@ -49,14 +26,15 @@ def reconnect(app=None, client=1):
                 print('App reconnected')
         else:
             print('App already connected')
-    except NameError:
+    except Exception as Exc:
+        exception = Exc
         app = TestApp("127.0.0.1", 4001, client)
         if app.isConnected() == False:
             print('IB Gateway not connected')
         else:
             print('App instantiated & connected')
 
-    return app
+    return {'app': app, 'exception': exception, 'info': info}
 
 
 def make_contract(app, underlying):
@@ -173,7 +151,6 @@ def get_execDetails(app):
     exec_list = [str(v) for k,v in exec_dict.items()]
     exec_tuples = [] 
     for item in exec_list:
-        conId = int(item[item.find('Execution')+22:item.find(',')])
         time = item[item.find('time')+6:item.find('AvgPrice')-1]
         OrderId = int(item[item.find('OrderId')+9:item.find('time')-1])
         AvgPrice = float(item[item.find('AvgPrice')+10:item.find('Price', item.find('AvgPrice')+5)-1])
@@ -181,9 +158,12 @@ def get_execDetails(app):
             Shares = int(float(item[item.find('Shares')+8:item.find('Commission')-1]))
         else:
             Shares = int(float(item[item.find('Shares')+8:len(item)]))
+        conId = int(item[item.find('Execution')+22:item.find(',')])
+        underlying = conId_to_ul[conId]
         ClientId = int(item[item.find('ClientId')+10:item.find('OrderId')-1])
-        exec_tuples.append( (conId, time, OrderId, AvgPrice, Shares, ClientId) )
-    exec_df = pd.DataFrame(exec_tuples, columns=['conId', 'time', 'OrderId', 'AvgPrice', 'Shares', 'ClientId'])
+        exec_tuples.append( (underlying, time, OrderId, AvgPrice, Shares, conId, ClientId) )
+    exec_df = pd.DataFrame(exec_tuples, 
+                           columns=['underlying', 'time', 'OrderId', 'AvgPrice', 'Shares', 'conId', 'ClientId'])
     exec_df.set_index('time', inplace=True)
     
     return exec_df

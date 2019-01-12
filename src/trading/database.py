@@ -1,0 +1,31 @@
+
+
+TV_to_IB = {'EURUSD': {'symbol': 'EUR', 'secType': 'CASH', 'currency': 'USD', 'exchange': 'IDEALPRO',
+                       'expiry': None},
+            'ES1!, 1': {'symbol': 'ES', 'secType': 'FUT', 'currency': 'USD', 'exchange': 'GLOBEX',
+                        'expiry': '201903'},
+            'SPY': {'symbol': 'SPY', 'secType': 'STK', 'currency': 'USD', 'exchange': 'ARCA',
+                    'expiry': None},
+            'CL1!, 1': {'symbol': 'CL', 'secType': 'FUT', 'currency': 'USD', 'exchange': 'NYMEX',
+                        'expiry': '201902'},
+            'USO': {'symbol': 'USO', 'secType': 'STK', 'currency': 'USD', 'exchange': 'ARCA',
+                    'expiry': None},
+            'GC1!, 1': {'symbol': 'GC', 'secType': 'FUT', 'currency': 'USD', 'exchange': 'NYMEX',
+                        'expiry': '201902'},
+            'GLD': {'symbol': 'GLD', 'secType': 'STK', 'currency': 'USD', 'exchange': 'ARCA',
+                    'expiry': None},
+            'TY1!, 1': {'symbol': 'ZN', 'secType': 'FUT', 'currency': 'USD', 'exchange': 'ECBOT',
+                        'expiry': '201903'},
+            'IBKR': {'symbol': 'IBKR', 'secType': 'STK', 'currency': 'USD', 'exchange': 'ISLAND',
+                     'expiry': None},
+            'XLV': {'symbol': 'XLV', 'secType': 'STK', 'currency': 'USD', 'exchange': 'ISLAND',
+                    'expiry': None},
+            }
+
+conId_to_ul = {12087792: 'EURUSD',
+               756733: 'SPY',
+               38590758: 'USO',
+               51529211: 'GLD',
+               4215205: 'XLV',
+               43645865: 'IBKR',
+              }
