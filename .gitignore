@@ -1,6 +1,12 @@
 .DS_Store
 .vscode/
 
+src/test_messaging.py
+src/test.py
+test/
+src/trading/ibapi/
+IBJts/
+
 # Python gitignore
 # Byte-compiled / optimized / DLL files
 __pycache__/

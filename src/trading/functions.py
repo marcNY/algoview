@@ -2,9 +2,15 @@ from ibapi.contract import Contract as IBcontract
 from ibapi.order import Order
 from ibapi.execution import ExecutionFilter
 from threading import Thread
-import numpy as np, pandas as pd, datetime as dt
-import time, queue, importlib, collections
-import trading.utils as utils, database as db
+import numpy as np
+import pandas as pd
+import datetime as dt
+import time
+import queue
+import importlib
+import collections
+import trading.utils as utils
+import trading.database as db
 from trading.wrapper import TestWrapper
 from trading.client import TestClient
 
@@ -16,23 +22,19 @@ def reconnect(app=None, client=1):
     exception = None
     info = None
     try:
-        if app is None:
+        if app is None or not isinstance(app, TestApp):
             app = TestApp("127.0.0.1", 4001, client)
+            info = "app init ever None or wrong object was passed"
         if app.isConnected() == False:
             app.connect("127.0.0.1", 4001, client)
             if app.isConnected() == False:
-                print('IB Gateway not connected')
+                info = 'app cannot connect probably IB Gateway not connected'
             else:
-                print('App reconnected')
+                info = 'app existed and reconnected'
         else:
-            print('App already connected')
+            info = 'app already connected'
     except Exception as Exc:
         exception = Exc
-        app = TestApp("127.0.0.1", 4001, client)
-        if app.isConnected() == False:
-            print('IB Gateway not connected')
-        else:
-            print('App instantiated & connected')
 
     return {'app': app, 'exception': exception, 'info': info}
 
@@ -163,15 +165,12 @@ def get_execDetails(app):
         conId = int(item[item.find('Execution')+22:item.find(',')])
         underlying = conId_to_ul[conId]
         ClientId = int(item[item.find('ClientId')+10:item.find('OrderId')-1])
-<<<<<<< HEAD
-        exec_tuples.append( (underlying, time, OrderId, AvgPrice, Shares, conId, ClientId) )
-    exec_df = pd.DataFrame(exec_tuples, 
+
+        exec_tuples.append(
+            (underlying, time, OrderId, AvgPrice, Shares, conId, ClientId))
+    exec_df = pd.DataFrame(exec_tuples,
                            columns=['underlying', 'time', 'OrderId', 'AvgPrice', 'Shares', 'conId', 'ClientId'])
-=======
-        exec_tuples.append((conId, time, OrderId, AvgPrice, Shares, ClientId))
-    exec_df = pd.DataFrame(exec_tuples, columns=[
-                           'conId', 'time', 'OrderId', 'AvgPrice', 'Shares', 'ClientId'])
->>>>>>> 7ad6a40783e708c44efa6f9663b049c5f1149961
+
     exec_df.set_index('time', inplace=True)
 
     return exec_df
