@@ -46,8 +46,7 @@ def execute_message(underlying, msg):
 
     end_time = time.time()
 
-
-return({'order_id': orderid1, 'fill_status': fill_status, 'avg_price': avg_price, 'error': error, 'info': info, 'start_time': start_time, 'end_time': end_time})
+    return({'order_id': orderid1, 'fill_status': fill_status, 'avg_price': avg_price, 'error': error, 'info': info, 'start_time': start_time, 'end_time': end_time})
 
 
 if __name__ == "__main__":
