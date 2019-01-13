@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 import time, queue, importlib, collections
-import trading.utils as utils
-import trading.database as db
-from trading.wrapper import TestWrapper
-from trading.client import TestClient
+import utils
+import database as db
+from wrapper import TestWrapper
+from client import TestClient
 
 TV_to_IB = db.TV_to_IB
 conId_to_ul = db.conId_to_ul

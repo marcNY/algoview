@@ -1,10 +1,7 @@
 from ibapi.client import EClient
 from ibapi.contract import Contract as IBcontract
 from ibapi.execution import ExecutionFilter
-import queue
-import datetime
-import time
-import trading.utils as utils
+import queue, datetime, time, utils
 from copy import deepcopy
 
 

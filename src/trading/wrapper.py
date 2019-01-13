@@ -3,7 +3,7 @@ from ibapi.contract import Contract as IBcontract
 from threading import Thread
 import queue
 import datetime
-import trading.utils as utils
+import utils
 
 
 class TestWrapper(EWrapper):
