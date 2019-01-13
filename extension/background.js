@@ -34,7 +34,14 @@ chrome.runtime.onInstalled.addListener(function() {
 chrome.runtime.onStartup.addListener(function() {
   reset();
 });
-
+function update_db(message) {
+  if (alerts_db.has(message["id"])) {
+    alerts_db.set(message["id"], message);
+    chrome.runtime.sendMessage(format_db_message(), function(response) {
+      console.log(response);
+    });
+  }
+}
 function format_db_message() {
   return {
     type: "alert_data",

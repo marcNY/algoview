@@ -12,6 +12,8 @@ import threading
 import Queue
 from params import paths
 import pika
+import time
+import json
 
 try:
     import Tkinter
@@ -23,6 +25,10 @@ except ImportError:
 # Helper function that sends a message to the webapp.
 
 
+def callback(ch, method, properties, body):
+    send_message(body.decode())
+
+
 def send_message(message):
    # Write message size.
     sys.stdout.write(struct.pack('I', len(message)))
@@ -30,6 +36,23 @@ def send_message(message):
     sys.stdout.write(message)
     sys.stdout.flush()
 
+
+def send_executed_messages(debug, channel):
+    send_message(json.dumps("starting executed message"))
+    if not debug:
+        channel.queue_declare(queue='executed_signals')
+        channel.basic_consume(callback,
+                              queue='executed_signals',
+                              no_ack=True)
+        channel.start_consuming()
+    else:
+        while 1:
+            method_frame, header_frame, body = channel.basic_get(
+                'executed_signals')
+            send_message(body.decode())
+            send_message(json.dumps("sleeping for 5"))
+            time.sleep(5)
+            send_message(json.dumps("finished sleeping"))
 # Thread that reads messages from the webapp.
 
 
@@ -119,16 +142,21 @@ def Main():
     connection = pika.BlockingConnection(
         pika.ConnectionParameters('localhost'))
     channel = connection.channel()
+    channel2 = connection.channel()
+
     channel.queue_declare(queue='hello')
     queue = Queue.Queue()
-
     main_window = NativeMessagingWindow(queue)
     main_window.master.title('Native Messaging Example')
 
     thread = threading.Thread(target=read_thread_func,
                               args=(queue, channel))
+    thread2 = threading.Thread(
+        target=send_executed_messages, args=(True, channel2))
+    thread2.daemon = True
     thread.daemon = True
     thread.start()
+    thread2.start()
 
     main_window.mainloop()
     channel.close()
