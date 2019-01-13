@@ -10,22 +10,22 @@ def execute_message(underlying, msg):
     error = None
     start_time = time.time()
     try:
-        app = fn.reconnect()
+        app = fn.reconnect()['app']
         print("Calling make_contract")
-        ibcontract, minTick = fn.make_contract(app, underlying)
+        contract_dets = fn.make_contract(app, underlying)
         print("Calling make_order")
-        order1 = fn.make_order(app, ibcontract, minTick, msg)
-        print("place_new_IB_order")
+        order1 = fn.make_order(app, contract_dets, msg)
         if order1.totalQuantity == 0:
             print("NOTHING TO TRADE")
             return
-        orderid1 = app.place_new_IB_order(ibcontract, order1, orderid=None)
-        fn.check_fill(app, order1, orderid1)
+        orderid1 = app.place_new_IB_order(contract_dets['ibcontract'], order1, orderid=None)
+        filled = fn.check_fill(app, order1, orderid1)
         app.disconnect()
     except Exception as Exc:
         app.disconnect()
         error = Exc
     end_time = time.time()
+    
     return({'order_id': orderid1, 'error': Exc, 'start_time': start_time, 'end_time': end_time})
 
 

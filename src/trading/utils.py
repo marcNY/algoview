@@ -48,13 +48,13 @@ def calc_bar_dur(barSize):
         durationStr = '1 D'
         barSizeSetting = '15 mins'
     elif barSize=='1h':
-        durationStr = '2 D'
+        durationStr = '4 D'
         barSizeSetting = '1 hour'
     elif barSize=='4h':
-        durationStr = '1 W'
+        durationStr = '2 W'
         barSizeSetting = '4 hours'
     elif barSize=='1d':
-        durationStr = '1 M'
+        durationStr = '2 M'
         barSizeSetting = '1 day'
     else:
         return "barSize unknown: add it to utils.calc_durationStr"

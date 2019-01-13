@@ -32,37 +32,41 @@ class TestClient(EClient):
         """
 
         # Make a place to store the data we're going to return
+        info = None
         contract_details_queue = utils.finishableQueue(
             self.init_contractdetails(reqId))
 
         self.reqContractDetails(reqId, ibcontract)
 
         # Run until we get a valid contract(s) or get bored waiting
-        max_wait_seconds = 5
+        max_wait_seconds = 2
         new_contract_details = contract_details_queue.get(
             timeout=max_wait_seconds)
 
         while self.wrapper.is_error():
             print(self.get_error())
 
-        if contract_details_queue.timed_out():
-            print(
-                "Exceeded maximum wait for wrapper to confirm finished - seems to be normal behaviour")
-
+#         if contract_details_queue.timed_out():
+#             info = 
+#                 "Exceeded maximum wait for wrapper to confirm finished"
+        no_contract_dets = False
         if len(new_contract_details) == 0:
-            print(
-                "Failed to get additional contract details: returning unresolved contract")
-            return ibcontract
+            info = "Failed to get additional contract details: returning unresolved contract"
+            no_contract_dets = True
 
         if len(new_contract_details) > 1:
-            print("got multiple contracts - will use the first one")
+            info = "got multiple contracts - using the first one"
 
         new_contract_details = new_contract_details[0]
+        
+        if no_contract_dets == False:
+            resolved_ibcontract = ibcontract
+            minTick = 0
+        else:
+            resolved_ibcontract = new_contract_details.contract
+            minTick = new_contract_details.minTick
 
-        resolved_ibcontract = new_contract_details.contract
-        minTick = new_contract_details.minTick
-
-        return resolved_ibcontract, minTick
+        return {'ibcontract': resolved_ibcontract, 'minTick': minTick, 'info': info}
     ##########################
     ## HISTORICAL DATA CODE ##
     ##########################
@@ -214,21 +218,18 @@ class TestClient(EClient):
     def place_new_IB_order(self, ibcontract, order, orderid=None):
         """
         Places an order
-        Returns brokerorderid
+        Returns orderid
         """
 
         # We can either supply our own ID or ask IB to give us the next valid one
         if orderid is None:
-            print("Getting orderid from IB")
             orderid = self.get_next_brokerorderid()
 
             if orderid is utils.TIME_OUT:
                 raise Exception(
                     "I couldn't get an orderid from IB, and you didn't provide an orderid")
 
-        print("Using order id of %d" % orderid)
-
-        # Note: It's possible if you have multiple traidng instances for orderids to be submitted out of sequence
+        # Note: It's possible if we have multiple trading instances for orderids to be submitted out of sequence
         # in which case IB will break
 
         # Place the order
