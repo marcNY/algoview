@@ -2,7 +2,6 @@
 .vscode/
 
 src/test_messaging.py
-src/test.py
 test/
 src/trading/ibapi/
 IBJts/

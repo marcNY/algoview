@@ -23,7 +23,9 @@ function display_one_message(msg) {
     status
   } = msg;
   $("#message_table > tbody:last-child").append(
-    `<tr><td>${underlying}</td><td>${status}</td><td>${description}</td><td>${number_message}</td><td>${time_last_fired}</td></tr>`
+    `<tr><td>${underlying}</td><td>${status}</td><td>${description}</td><td>${number_message}</td><td>${
+      time_last_fired.split(" ")[1]
+    }</td></tr>`
   );
 }
 function displayArray(msg_array) {
@@ -71,8 +73,7 @@ $(function() {
     port2.postMessage({ type: "POPUP_CLEAN" });
   });
   $("#ButtonFlush").on("click", function() {
-    x = $("#dynamicModule");
-    if (x != null) x.remove();
+    clear_table();
     port2.postMessage({ type: "POPUP_FLUSH" });
   });
 

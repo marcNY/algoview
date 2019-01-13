@@ -9,15 +9,12 @@ import time
 
 def callback(ch, method, properties, body):
     order_message = decode_message(body)['value']
-    underlying = order_message['underlying']
-    msg = order_message['msg']
-    start_time = time.time()
+    underlying = order_message['underlying'].strip()
+    msg = order_message['description'].strip()
+
     # We get a dictionnary out of executing message
     output = tradelib.execute_message(underlying, msg)
-    end_time = time.time()
 
-    order_message['start_execution_time'] = start_time
-    order_message['end_execution_time'] = end_time
     # we merge both dictionaries
     order_message = {**order_message, **output}
     ch.basic_publish(exchange='',
@@ -27,15 +24,11 @@ def callback(ch, method, properties, body):
 
 
 def decode_message(body):
-    message_received = json.loads(body)
-    message_received = message_received.replace(
-        '[', '').replace('"', '').replace(']', '').split(',')
+    message_received = json.loads(json.loads(body.decode('utf-8')))
 
-    if isinstance(message_received, list) and len(message_received) == 8:
+    if isinstance(message_received, dict) and 'underlying' in message_received and 'description' in message_received:
         return {'valid': 1,
-                'value': {'underlying': message_received[0],
-                          'msg': message_received[1],
-                          'time': message_received[3]}}
+                'value': message_received}
     else:
         return {'valid': 0, 'value': message_received}
 

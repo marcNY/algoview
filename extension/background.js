@@ -289,7 +289,7 @@ function clean() {
 }
 
 function flush() {
-  delete alerts_db.splice(0);
+  alerts_db = new Map();
 }
 
 function group() {
