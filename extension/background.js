@@ -21,7 +21,7 @@ var thread_poll_id = 0;
 var thread_status_id = 0;
 var id_counter = (parseInt((Date.now() / 1000).toFixed(0)) - T0) * 100;
 
-var alerts_db = [];
+var alerts_db = new Map();
 var orders_db = [];
 var status_listen = true;
 
@@ -35,18 +35,29 @@ chrome.runtime.onStartup.addListener(function() {
   reset();
 });
 
+function format_db_message() {
+  return {
+    type: "alert_data",
+    listen: status_listen,
+    data: Array.from(alerts_db.values())
+  };
+}
 function listenPopup(msg, portFrom) {
   if (msg.type == "POPUP_ALERTS") {
     console.log("Alert 1 received");
-    portFrom.postMessage([alerts_db, status_listen]);
+    portFrom.postMessage(format_db_message());
   } else if (msg.type == "POPUP_GROUPS")
-    portFrom.postMessage([group(), status_listen]);
+    portFrom.postMessage({
+      type: "alert_data",
+      listen: status_listen,
+      data: group()
+    });
   else if (msg.type == "POPUP_CLEAN") {
     clean();
-    portFrom.postMessage([alerts_db, status_listen]);
+    portFrom.postMessage(format_db_message());
   } else if (msg.type == "POPUP_FLUSH") {
     flush();
-    portFrom.postMessage([alerts_db, status_listen]);
+    portFrom.postMessage(format_db_message());
   } else if (msg.type == "POPUP_EVENT") {
     console.log("Alert 2 received");
     status_listen = !status_listen;
@@ -59,11 +70,14 @@ function listenPopup(msg, portFrom) {
       tabManager();
       console.log("Alerts resumed");
     }
-    portFrom.postMessage([alerts_db, status_listen]);
+    portFrom.postMessage({
+      type: "alert_data",
+      listen: status_listen,
+      data: alerts_db
+    });
   } else if (msg.type == "SEND_NATIVE") {
     sendNativeMessage(msg.value);
     console.log(portFrom);
-    portFrom.postMessage([alerts_db, status_listen]);
   }
 }
 // New page / popup ================================================================================
@@ -84,26 +98,28 @@ chrome.runtime.onConnect.addListener(function(portFrom) {
       } else if (message.type === "INDIVIDUAL") {
         // Event from Contentscrpt
         pushIndivdual = true;
-        console.log("Individual");
+        //console.log("Individual");
       }
       alert_full_data = message.payload.ret;
+      if (alert_full_data.length < 1) return;
+      //We add additional data to the message
+      const completed_data = alert_full_data.map(add_info_message);
 
-      // if (alert_full_data > 0) {
-      //   console.log(alert_full_data);
-      // }
-      if (alert_full_data.length == 1 && alert_full_data[0].length == 2) {
-        var temp = message.payload.ret[0][0].split(" ");
-        alert_full_data = [
-          [temp[temp.length - 1], message.payload.ret[0][1], 1, getTimeNow()]
-        ];
-      }
-      for (var j = 0; j < alert_full_data.length; j++) {
-        var newTwMessage = filter(alert_full_data[j], pushIndivdual);
-        if (newTwMessage.length > 0) {
-          console.log("New Message: ", newTwMessage);
-          sendNativeMessage(newTwMessage);
-        }
-      }
+      //We check if the message is not already in the databases
+      const new_data = completed_data.filter(msg => check_if_in_db(msg));
+      // if there is no new message exit the function
+      if (new_data.length < 1) return;
+      //We add the new data to the database
+      new_data.map(x => alerts_db.set(get_map_key(x), x));
+      //TODO We send the message to the new database
+      new_data.map(msg => sendNativeMessage(msg));
+
+      //Put the messages as pending
+      new_data.map(msg => (msg.status = "pending"));
+
+      chrome.runtime.sendMessage(format_db_message(), function(response) {
+        console.log(response);
+      });
     });
     if (thread_poll_id == 0) {
       thread_poll_id = setInterval(poll, TIME_POLL);
@@ -201,7 +217,7 @@ function positiveTime(strA, strB) {
 }
 
 function reset() {
-  setTimeout(customAlerts, TIME_POLL);
+  //setTimeout(customAlerts, TIME_POLL);
   //customAlerts();
   chrome.browserAction.setBadgeText({ text: " " });
   chrome.browserAction.setBadgeBackgroundColor({ color: "RED" });
@@ -228,62 +244,41 @@ function getRelevantTabs(winData) {
     }
   }
 }
-
-function filter(newData, individual) {
-  var ok = 1;
-  newData[2] = parseInt(newData[2]);
-  var type = newData[0];
-  var desc = newData[1];
-  var iter = newData[2];
-  var time = newData[3];
-
-  for (var j = 0; j < alerts_db.length && ok == 1; j++) {
-    //console.log('filtering ' + newData + ' '+ time + ' '+alerts_db[j][3]+ ' '+(time - alerts_db[j][3]));
-    if (individual) {
-      if (type != alerts_db[j][0]) continue;
-      if (desc != alerts_db[j][1]) continue;
-      if (positiveTime(alerts_db[j][3], time) > 0) continue;
-      ok = 0;
-    } else {
-      if (type != alerts_db[j][0]) continue;
-      if (desc != alerts_db[j][1]) continue;
-      if (iter > alerts_db[j][2]) continue;
-      if (iter > 1) {
-        if (positiveTime(alerts_db[j][3], time) > 0) continue;
-      }
-      ok = 0;
-    }
+function tdview_date_string_to_date(datestring) {
+  const from = datestring.split(/ |:|\//);
+  const nfrom_ = from.map(x => parseInt(x));
+  return new Date(
+    nfrom_[2],
+    nfrom_[1] - 1,
+    nfrom_[0],
+    nfrom_[3],
+    nfrom_[4],
+    nfrom_[5]
+  );
+}
+function add_info_message(msg) {
+  if (!msg.grouped) {
+    msg["number_message"] = 1;
+    msg["time_last_fired"] = getTimeNow();
+    msg["underlying"] = msg["underlying"].replace("Alert on", "");
   }
-  if (ok == 1) {
-    db_add(newData);
-    return newData;
-  } else {
-    return [];
-  }
+  msg["date_time_obj"] = tdview_date_string_to_date(msg["time_last_fired"]);
+  msg["unix_fired_time"] = msg["date_time_obj"].getTime() / 1000;
+  msg["status"] = "not treated";
+  msg["id"] = get_map_key(msg);
+  return msg;
+}
+//When we receive new message
+function check_if_in_db(newData) {
+  const check = get_map_key(newData);
+  return !alerts_db.has(check);
 }
 
-function db_add(newData) {
-  ret = prepare(newData);
-  accepted = ret[0];
-  params = ret[1];
-  desc = ret[2];
-  title = params[0];
-  init_status = 0;
-
-  if (!accepted) {
-    newData.push(-2);
-    newData.push(-1);
-  } else {
-    newData.push(0);
-    newData.push(id_counter);
-    //orderAdd(params, id_counter);
-    id_counter++;
-  }
-  newData.push(title);
-  newData.push(desc);
-  alerts_db.push(newData);
-  //console.log('Alert added: ' + newData);
-  //console.log(alerts_db);
+function get_map_key(newData) {
+  const { underlying, description, unix_fired_time } = newData;
+  return Object.values({ underlying, description, unix_fired_time })
+    .join()
+    .replace(/ /g, "");
 }
 
 function clean() {
@@ -321,125 +316,4 @@ function group() {
   }
 
   return g;
-}
-
-function customAlerts() {}
-
-function prepare(msg) {
-  title = -1;
-  direction = -1;
-  price = -1;
-  quantity = -1;
-  type = -1;
-  exchange = -1;
-  symbol = -1;
-  x = DEFAULT_X;
-  tf = DEFAULT_TF;
-  m = false;
-  accepted = true;
-
-  params = msg[1].split(" ");
-
-  for (var k = 0; k < params.length && accepted; k++) {
-    lr = params[k].split("=");
-    if (lr.length != 2) accepted = false;
-    if (lr[0] == "d") {
-      if (lr[1] == "long" || lr[1] == "short") {
-        direction = lr[1];
-      }
-    } else if (lr[0] == "m") {
-      if (lr[1] == "true") m = true;
-      else if (lr[1] == "false") m = false;
-      else m = -1;
-    } else if (lr[0] == "tf") {
-      z = parseFloat(lr[1]);
-      if (!isNaN(z) && z > 0.0) {
-        tf = z;
-      } else accepted = false;
-    } else if (lr[0] == "x") {
-      x = parseFloat(lr[1]);
-      if (!isNaN(z) && x > 0.0) {
-      } else accepted = false;
-    } else if (lr[0] == "n") {
-      title = lr[1];
-    } else if (lr[0] == "p") {
-      z = parseFloat(lr[1]);
-      if (!isNaN(z)) {
-        price = z;
-      }
-    } else if (lr[0] == "q") {
-      z = parseFloat(lr[1]);
-      if (!isNaN(z)) {
-        quantity = z;
-      }
-    } else if (lr[0] == "t") {
-      if (lr[1] == "l" || lr[1] == "m") {
-        type = lr[1];
-      }
-    } else if (lr[0] == "e") {
-      if (EXCHANGES.indexOf(lr[1]) < 0) return [];
-      exchange = lr[1];
-    } else if (lr[0] == "s") {
-      symbol = lr[1];
-    } else {
-      console.log("ERROR: symbol ", lr[0]);
-      accepted = false;
-    }
-  }
-
-  if (
-    m == -1 ||
-    title == -1 ||
-    direction == -1 ||
-    price == -1 ||
-    quantity == -1 ||
-    type == -1 ||
-    exchange == -1 ||
-    symbol == -1
-  ) {
-    accepted = false;
-    fullDesc = msg[1];
-  } else if (
-    m == true &&
-    ((direction == "long" && price > 0) || (direction == "short" && price < 0))
-  ) {
-    console.log("Rejected (m == true)");
-    accepted = false;
-    fullDesc = msg[1];
-  } else {
-    // Compulsory params
-    fullDesc =
-      "d=" +
-      direction +
-      " t=" +
-      type +
-      " p=" +
-      price +
-      " q=" +
-      quantity +
-      " s=" +
-      symbol +
-      " e=" +
-      exchange;
-    // Optional params
-    if (m != false) fullDesc = fullDesc + " m=" + m;
-    if (x != DEFAULT_X) fullDesc = fullDesc + " x=" + x;
-    if (tf != DEFAULT_TF) fullDesc = fullDesc + " tf=" + tf;
-  }
-
-  return [
-    accepted,
-    [title, direction, price, quantity, type, exchange, symbol, m, x, tf],
-    fullDesc
-  ];
-}
-
-function updateAlert(id, status) {
-  console.log("updating alerts");
-  for (var j = 0; j < alerts_db.length; j++) {
-    if (alerts_db[j][5] == id) {
-      alerts_db[j][4] = status;
-      return;
-    }
-  }
 }

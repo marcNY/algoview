@@ -14,17 +14,18 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
       x = document.getElementsByClassName(
         "js-alerts-multiple-notifications-dialog__table-container"
       );
+      console.log("x=", x);
       arr = Array.prototype.slice.call(x);
-      console.log("arr:", arr);
+      //console.log("arr:", arr);
       y = arr[0].children;
       arr2 = Array.prototype.slice.call(y);
-      console.log("arr2:", arr2);
+      //console.log("arr2:", arr2);
       z = arr2[0].children;
       arr3 = Array.prototype.slice.call(z); // [head, body]
-      console.log("arr3:", arr3);
+      //console.log("arr3:", arr3);
       a = arr3[1].children;
       arr4 = Array.prototype.slice.call(a); // [body]
-      console.log("arr4:", arr4);
+      //console.log("arr4:", arr4);
       for (var j = 0; j < arr4.length; j++) {
         z = arr4[j].children;
         arr5 = Array.prototype.slice.call(z); // [tds]
@@ -41,7 +42,13 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         d = arr5[3].children; // div
         dd = Array.prototype.slice.call(d);
         ddd = dd[0].textContent;
-        ret.push([aaa, bbb, ccc, ddd]);
+        ret.push({
+          underlying: aaa,
+          description: bbb,
+          number_message: ccc,
+          time_last_fired: ddd,
+          grouped: true
+        });
       }
       if (arr4.length > 1) {
         console.log("Multiple alarms: ", ret);
@@ -75,7 +82,7 @@ var observer = new MutationObserver(function(mutations) {
     e = arr2[2];
     alert = arr2[1].textContent;
     desc = e.textContent;
-    ret = [[alert, desc]];
+    ret = [{ underlying: alert, description: desc, grouped: false }];
     contentPort.postMessage({
       //MFN: sending message to the extension
       type: "INDIVIDUAL",
