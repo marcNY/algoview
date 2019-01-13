@@ -70,7 +70,7 @@ def Main(basic_get=False):
         output = tradelib.execute_message(underlying, msg)
         # we merge both dictionaries
         order_message = {**order_message, **output}
-        order_message['error'] = 'There was an error'
+
         print(order_message)
         channel.basic_publish(exchange='',
                               routing_key='executed_signals',
@@ -78,4 +78,4 @@ def Main(basic_get=False):
 
 
 if __name__ == "__main__":
-    Main(basic_get=True)
+    Main(basic_get=False)

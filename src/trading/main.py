@@ -1,4 +1,6 @@
-import os, time
+import trading.functions as fn
+import os
+import time
 cwd = os.getcwd()
 print(cwd)
 if cwd.find('src') != len(cwd)-3:
@@ -9,8 +11,6 @@ if cwd.find('src') != len(cwd)-3:
     else:
         print('Warning: cannot resolve path')
 
-import trading.functions as fn
-
 
 # Example of underlying/msg from a TradingView alert
 underlying = 'EURUSD'
@@ -19,7 +19,7 @@ msg = 'n=entryL1 d=long t=m p=0 q=1 u=1 c=10000 b=1h'
 
 def execute_message(underlying, msg):
     start_time = time.time()
-    
+
     error = None
     info = None
     fill_status = False
@@ -43,7 +43,7 @@ def execute_message(underlying, msg):
         app.disconnect()
     except Exception as Exc:
         app.disconnect()
-        error = Exc
+        error = str(Exc)
 
     end_time = time.time()
 
