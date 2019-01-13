@@ -40,6 +40,9 @@ def execute_message(underlying, msg):
         else:
             info = "Nothing to trade"
 
+        exec_df = fn.get_execDetails(app)
+        orders_df = fn.get_openOrders(app)
+            
         app.disconnect()
     except Exception as Exc:
         app.disconnect()
