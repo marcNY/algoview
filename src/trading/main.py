@@ -19,7 +19,7 @@ def execute_message(underlying, msg):
             print("NOTHING TO TRADE")
             return
         orderid1 = app.place_new_IB_order(contract_dets['ibcontract'], order1, orderid=None)
-        filled = fn.check_fill(app, order1, orderid1)
+        fill_dets = fn.check_fill(app, order1, orderid1)
         app.disconnect()
     except Exception as Exc:
         app.disconnect()
