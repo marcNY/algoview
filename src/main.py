@@ -1,7 +1,17 @@
 import pika  # client module for rabbit_mq
+import os, json, time
+cwd = os.getcwd()
+print(cwd)
+if cwd.find('src') != len(cwd)-3:
+    if cwd.find('algoview') == len(cwd)-8:
+        os.chdir(cwd + '/src')
+    elif len(cwd) > cwd.find('src')+3:
+        os.chdir(cwd[:cwd.find('src')+3])
+    else:
+        print('Warning: cannot resolve path')
+
 import trading.main as tradelib
-import json
-import time
+
 # function called when receiving a message from amqp
 
 # TODO: cancel message execution if received more than 30 seconds before

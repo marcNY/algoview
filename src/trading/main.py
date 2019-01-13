@@ -9,7 +9,7 @@ if cwd.find('src') != len(cwd)-3:
     else:
         print('Warning: cannot resolve path')
 
-import functions as fn
+import trading.functions as fn
 
 
 # Example of underlying/msg from a TradingView alert

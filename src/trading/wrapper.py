@@ -1,9 +1,8 @@
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract as IBcontract
 from threading import Thread
-import queue
-import datetime
-import utils
+import queue, datetime
+import trading.utils as utils
 
 
 class TestWrapper(EWrapper):
