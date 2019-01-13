@@ -1,10 +1,7 @@
 from ibapi.client import EClient
 from ibapi.contract import Contract as IBcontract
 from ibapi.execution import ExecutionFilter
-import queue
-import datetime
-import time
-import trading.utils as utils
+import queue, datetime, time, utils
 from copy import deepcopy
 
 
@@ -104,7 +101,7 @@ class TestClient(EClient):
         )
 
         # Wait until we get a completed data, an error, or get bored waiting
-        max_wait_seconds = 3
+        max_wait_seconds = 6
 
         historic_data = historic_data_queue.get(timeout=max_wait_seconds)
 

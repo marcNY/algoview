@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 import time, queue, importlib, collections
-import trading.utils as utils
-import trading.database as db
-from trading.wrapper import TestWrapper
-from trading.client import TestClient
+import utils
+import database as db
+from wrapper import TestWrapper
+from client import TestClient
 
 TV_to_IB = db.TV_to_IB
 conId_to_ul = db.conId_to_ul
@@ -100,11 +100,14 @@ def calc_unit(app, ibcontract, unit_size, initial_capital, barSize):
     OUTPUTS
     unit: number of contracts to be traded on each entry
     '''
+    reconnect(app)
     exception = None
     durationStr, barSizeSetting = utils.calc_bar_dur(barSize)
-    hist_mkt_data = app.get_IB_historical_data(
-        ibcontract, durationStr, barSizeSetting)
-    n = len(hist_mkt_data)
+    n = 0
+    while n==0:
+        hist_mkt_data = app.get_IB_historical_data(
+            ibcontract, durationStr, barSizeSetting)
+        n = len(hist_mkt_data)
     sum_temp = 0
     for row in hist_mkt_data[n-20:n]:
         sum_temp += row[2] - row[3]
@@ -189,28 +192,27 @@ def check_fill(app, order1, orderid1):
     return False if the order has not been filled and True if it has been executed
     """
     reconnect(app)
-    order_filled = False
+    fill_status = False
     counter = 0
     Shares = 0
-    while order_filled == False and counter < 5:
+    price = 0
+    while fill_status == False and counter < 5:
         counter += 1
         exec_dict = app.get_executions_and_commissions()
         exec_list = [str(v) for k, v in exec_dict.items()]
         for item in exec_list:
             if int(item[item.find('OrderId')+9:item.find('time')-1]) == orderid1:
+                price = float(item[item.find('AvgPrice')+10:item.find('Price', item.find('AvgPrice')+5)-1])
                 if len(item) > item.find('Shares')+15:
                     Shares += int(float(item[item.find('Shares') +
                                              8:item.find('Commission')-1]))
                 else:
                     Shares += int(float(item[item.find('Shares')+8:len(item)]))
                 if Shares == order1.totalQuantity:
-                    order_filled = True
+                    fill_status = True
         time.sleep(1)
-
-    if order_filled == True:
-        return True
-    else:
-        return False
+    
+    return {'fill_status': fill_status, 'price': price}
 
 
 class TestApp(TestWrapper, TestClient):
