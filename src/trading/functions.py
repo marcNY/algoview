@@ -5,10 +5,7 @@ from threading import Thread
 import numpy as np
 import pandas as pd
 import datetime as dt
-import time
-import queue
-import importlib
-import collections
+import time, queue, importlib, collections
 import trading.utils as utils
 import trading.database as db
 from trading.wrapper import TestWrapper
@@ -41,18 +38,25 @@ def reconnect(app=None, client=1):
 
 def make_contract(app, underlying):
     reconnect(app)
-    if underlying not in TV_to_IB:
-        return 'Error: no details available for this underlying'
+    exception = None
+    try:
+        TV_to_IB[underlying]
+    except Exception as Exc:
+        exception = Exc
     ibcontract = utils.create_contract(TV_to_IB[underlying]['symbol'], TV_to_IB[underlying]['secType'],
                                        TV_to_IB[underlying]['currency'], TV_to_IB[underlying]['exchange'],
                                        TV_to_IB[underlying]['expiry'])
-    resolved_ibcontract, minTick = app.resolve_ib_contract(ibcontract)
+    contract_dets = app.resolve_ib_contract(ibcontract)
+    resolved_ibcontract = contract_dets['ibcontract']
+    minTick = contract_dets['minTick']
+    
+    return {'ibcontract': resolved_ibcontract, 'minTick': minTick, 'exception': exception}
 
-    return resolved_ibcontract, minTick
 
-
-def make_order(app, ibcontract, minTick, message):
+def make_order(app, contract_dets, message):
     reconnect(app)
+    ibcontract = contract_dets['ibcontract']
+    minTick = contract_dets['minTick']
     order_params = {k: v for k, v in (x.split('=')
                                       for x in message.split(' '))}
     order = Order()
@@ -77,13 +81,12 @@ def make_order(app, ibcontract, minTick, message):
     q = int(order_params['q'])
     if q > 0:
         unit = calc_unit(
-            app, ibcontract, order_params['u'], order_params['c'], order_params['b'])
+            app, ibcontract, order_params['u'], order_params['c'], order_params['b'])['unit']
         order.totalQuantity = int(q * unit)
     else:
-        order.totalQuantity = int(get_pos(app, ibcontract))
+        order.totalQuantity = int(get_pos(app, ibcontract)['position'])
 
     order.transmit = True
-    print(order)
 
     return order
 
@@ -97,6 +100,7 @@ def calc_unit(app, ibcontract, unit_size, initial_capital, barSize):
     OUTPUTS
     unit: number of contracts to be traded on each entry
     '''
+    exception = None
     durationStr, barSizeSetting = utils.calc_bar_dur(barSize)
     hist_mkt_data = app.get_IB_historical_data(
         ibcontract, durationStr, barSizeSetting)
@@ -110,24 +114,27 @@ def calc_unit(app, ibcontract, unit_size, initial_capital, barSize):
         mult = 1.0
     else:
         mult = ibcontract.multiplier
-    unit = float(unit_size) / 100 * float(initial_capital) / (N * mult)
+    try:
+        unit = float(unit_size) / 100 * float(initial_capital) / (N * mult)
+    except Exception as Exc:
+        exception = Exc
 
-    return unit
+    return {'unit': unit, 'exception': exception}
 
 
 def get_pos(app, ibcontract):
     holdings = app.get_current_positions()
-    pos = 'NaN'
+    pos = 0
+    info = None
 
     for item in holdings:
         if ibcontract.conId == item[1].conId:
             pos = item[2]
 
-    if pos == 'NaN':
-        pos = 0
-        print('No position to exit')
+    if pos == 0:
+        info = 'No position to exit'
 
-    return pos
+    return {'position': pos, 'info': info}
 
 
 def get_quotes(app, ibcontract):
@@ -201,10 +208,8 @@ def check_fill(app, order1, orderid1):
         time.sleep(1)
 
     if order_filled == True:
-        print('== ORDER FILLED ==')
         return True
     else:
-        print('WARNING: ORDER NOT FILLED')
         return False
 
 
