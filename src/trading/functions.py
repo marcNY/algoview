@@ -186,6 +186,39 @@ def get_execDetails(app):
     return exec_df
 
 
+def get_openOrders(app):
+    reconnect(app)
+    orders_dict = app.get_open_orders()
+    orders_list = [str(v) for k, v in orders_dict.items()]
+    orders_tuples = []
+    for item in orders_list:
+        conId = int(item[18:item.find(',')])
+        underlying = conId_to_ul[conId]
+        quantity = int(item[item.find('BUY')+4:item.find('@')])
+        price = float(item[item.find('@')+1:item.find('DAY')-1])
+        status = item[item.find('status')+8:item.find('filled')-1]
+        if item.find('MKT')>0:
+            order_type = 'market'
+        else:
+            order_type = 'limit'
+        if item.find('BUY')>0:
+            direction = 'buy'
+        else:
+            direction = 'sell'
+        filled = float(item[item.find('filled')+8:item.find('avgFillPrice')-1])
+        avgFillPrice = float(item[item.find('avgFillPrice')+14:item.find('permid')-1])
+        clientId = int(item[item.find('clientId')+10:item.find('whyHeld')-1])
+
+        orders_tuples.append(
+            (status, underlying, direction, order_type, quantity, price, filled, avgFillPrice, conId, clientId))
+    orders_df = pd.DataFrame(orders_tuples,
+                           columns=['status', 'underlying', 'direction', 'order type', 'quantity', 'price', 'filled', 'avg fill px', 'conId', 'ClientId'])
+    # orders_df.set_index('time', inplace=True)
+    app.disconnect()
+    
+    return orders_df
+
+
 def check_fill(app, order1, orderid1):
     """
     Check_fill: check if order has been filled, 

@@ -43,9 +43,9 @@ class TestClient(EClient):
         while self.wrapper.is_error():
             print(self.get_error())
 
-#         if contract_details_queue.timed_out():
-#             info = 
-#                 "Exceeded maximum wait for wrapper to confirm finished"
+        if contract_details_queue.timed_out():
+            info = "Exceeded maximum wait for wrapper to confirm finished"
+        
         no_contract_dets = False
         if len(new_contract_details) == 0:
             info = "Failed to get additional contract details: returning unresolved contract"
@@ -57,11 +57,11 @@ class TestClient(EClient):
         new_contract_details = new_contract_details[0]
         
         if no_contract_dets == False:
-            resolved_ibcontract = ibcontract
-            minTick = 0
-        else:
             resolved_ibcontract = new_contract_details.contract
             minTick = new_contract_details.minTick
+        else:
+            resolved_ibcontract = ibcontract
+            minTick = 0
 
         return {'ibcontract': resolved_ibcontract, 'minTick': minTick, 'info': info}
     ##########################
