@@ -1,5 +1,8 @@
+import trading.main as tradelib
 import pika  # client module for rabbit_mq
-import os, json, time
+import os
+import json
+import time
 cwd = os.getcwd()
 print(cwd)
 if cwd.find('src') != len(cwd)-3:
@@ -10,7 +13,6 @@ if cwd.find('src') != len(cwd)-3:
     else:
         print('Warning: cannot resolve path')
 
-import trading.main as tradelib
 
 # function called when receiving a message from amqp
 
@@ -49,7 +51,10 @@ def Main(basic_get=False):
 
     channel = connection.channel()
     if not basic_get:
+        channel.queue_purge(queue='hello')
+        channel.queue_purge(queue='executed_signals')
         channel.queue_declare(queue='hello')
+        channel.queue_declare(queue='executed_signals')
         channel.basic_consume(callback,
                               queue='hello',
                               no_ack=True)
