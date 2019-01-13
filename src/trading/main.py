@@ -8,7 +8,9 @@ msg = 'n=entryL1 d=long t=m p=0 q=1 u=1 c=10000 b=1h'
 
 def execute_message(underlying, msg):
     error = None
+    orderid1 = None
     start_time = time.time()
+    filled = False
     try:
         app = fn.reconnect()['app']
         print("Calling make_contract")
@@ -18,15 +20,16 @@ def execute_message(underlying, msg):
         if order1.totalQuantity == 0:
             print("NOTHING TO TRADE")
             return
-        orderid1 = app.place_new_IB_order(contract_dets['ibcontract'], order1, orderid=None)
+        orderid1 = app.place_new_IB_order(
+            contract_dets['ibcontract'], order1, orderid=None)
         filled = fn.check_fill(app, order1, orderid1)
         app.disconnect()
     except Exception as Exc:
         app.disconnect()
         error = Exc
     end_time = time.time()
-    
-    return({'order_id': orderid1, 'error': Exc, 'start_time': start_time, 'end_time': end_time})
+
+    return({'order_filled': filled, 'order_id': orderid1, 'error': error, 'start_execute_message_time': start_time, 'end_execute_message_time': end_time})
 
 
 if __name__ == "__main__":
