@@ -33,20 +33,34 @@ def decode_message(body):
         return {'valid': 0, 'value': message_received}
 
 
-def Main():
+def Main(basic_get=False):
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host='localhost'))
 
     channel = connection.channel()
+    if not basic_get:
+        channel.queue_declare(queue='hello')
+        channel.basic_consume(callback,
+                              queue='hello',
+                              no_ack=True)
+        print(' [*] Waiting for messages. To exit press CTRL+C')
+        channel.start_consuming()
+    else:
+        method_frame, header_frame, body = channel.basic_get('hello')
+        order_message = decode_message(body)['value']
+        underlying = order_message['underlying'].strip()
+        msg = order_message['description'].strip()
 
-    channel.queue_declare(queue='hello')
-    channel.basic_consume(callback,
-                          queue='hello',
-                          no_ack=True)
-
-    print(' [*] Waiting for messages. To exit press CTRL+C')
-    channel.start_consuming()
+        # We get a dictionnary out of executing message
+        output = tradelib.execute_message(underlying, msg)
+        # we merge both dictionaries
+        order_message = {**order_message, **output}
+        order_message['error'] = 'There was an error'
+        print(order_message)
+        channel.basic_publish(exchange='',
+                              routing_key='executed_signals',
+                              body=json.dumps(order_message))
 
 
 if __name__ == "__main__":
-    Main()
+    Main(basic_get=True)
