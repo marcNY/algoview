@@ -45,7 +45,7 @@ $(function() {
   port2.onMessage.addListener(function(msg) {
     console.log("message received:", msg);
     if (!msg.type || msg.type != "alert_data") return;
-    if (msg.data.length < 1) return;
+    if (!msg.data || msg.data.length < 1) return;
     displayArray(msg.data);
   });
   //MFN: THE FOLLOWING METHODS ARE LOADED WHEN THE PAGE IS LOADED
@@ -53,7 +53,7 @@ $(function() {
   chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     console.log("message received:", request);
     if (!request.type || request.type != "alert_data") return;
-    if (request.data.length < 1) return;
+    if (!request.data || request.data.length < 1) return;
     displayArray(request.data);
   });
 
