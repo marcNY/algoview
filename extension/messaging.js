@@ -17,7 +17,14 @@ function sendNativeMessage(message) {
 }
 
 function onNativeMessage(message) {
-  console.log("Received message:" + JSON.stringify(message));
+  console.log("Received message:", message);
+  if (
+    typeof message == "object" &&
+    "underlying" in message &&
+    "description" in message
+  ) {
+    update_db(message);
+  }
 }
 
 function onDisconnected() {
