@@ -40,8 +40,8 @@ def execute_message(underlying, msg):
         else:
             info = "Nothing to trade"
 
-        exec_df = fn.get_execDetails(app)
-        orders_df = fn.get_openOrders(app)
+        exec_dict = app.get_executions_and_commissions()
+        orders_dict = app.get_open_orders()
             
         app.disconnect()
     except Exception as Exc:
@@ -50,7 +50,8 @@ def execute_message(underlying, msg):
 
     end_time = time.time()
 
-    return({'order_id': orderid1, 'fill_status': fill_status, 'avg_price': avg_price, 'error': error, 'info': info, 'start_time': start_time, 'end_time': end_time})
+    return({'order_id': orderid1, 'fill_status': fill_status, 'avg_price': avg_price, 'error': error, 'info': info,
+            'exec_dict': exec_dict, 'orders_dict': orders_dict, 'start_time': start_time, 'end_time': end_time})
 
 
 if __name__ == "__main__":
