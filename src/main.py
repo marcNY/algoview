@@ -29,6 +29,7 @@ def callback(ch, method, properties, body):
 
     # we merge both dictionaries
     order_message = {**order_message, **output}
+    order_message['status'] = 'executed'
     ch.basic_publish(exchange='',
                      routing_key='executed_signals',
                      body=json.dumps(order_message))

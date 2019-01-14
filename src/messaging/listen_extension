@@ -37,10 +37,12 @@ def send_message(message):
     sys.stdout.flush()
 
 
-def send_executed_messages(debug, channel):
+def send_executed_messages(debug, queue):
     send_message(json.dumps("starting executed message"))
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters('localhost'))
+    channel = connection.channel()
     if not debug:
-        channel.queue_declare(queue='executed_signals')
         channel.basic_consume(callback,
                               queue='executed_signals',
                               no_ack=True)
@@ -142,8 +144,6 @@ def Main():
     connection = pika.BlockingConnection(
         pika.ConnectionParameters('localhost'))
     channel = connection.channel()
-    channel2 = connection.channel()
-
     channel.queue_declare(queue='hello')
     queue = Queue.Queue()
     main_window = NativeMessagingWindow(queue)
@@ -152,7 +152,7 @@ def Main():
     thread = threading.Thread(target=read_thread_func,
                               args=(queue, channel))
     thread2 = threading.Thread(
-        target=send_executed_messages, args=(True, channel2))
+        target=send_executed_messages, args=(False, queue))
     thread2.daemon = True
     thread.daemon = True
     thread.start()
