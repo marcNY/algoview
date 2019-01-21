@@ -56,9 +56,7 @@ def make_contract(app, underlying):
 def make_order(app, contract_dets, message):
     reconnect(app)
     ibcontract = contract_dets['ibcontract']
-    minTick = contract_dets['minTick']
-    order_params = {k: v for k, v in (x.split('=')
-                                      for x in message.split(' '))}
+    order_params = utils.parse_message(message)
     order = Order()
     if order_params['t'] == 'l':
         order.orderType = "LMT"
@@ -66,10 +64,10 @@ def make_order(app, contract_dets, message):
         best_bid, best_offer = get_quotes(app, ibcontract)
         if order_params['d'] == 'long':
             order.action = "BUY"
-            order.lmtPrice = best_bid + int(order_params['p']) * minTick
+            order.lmtPrice = best_bid + int(order_params['p']) * contract_dets['minTick']
         else:
             order.action = "SELL"
-            order.lmtPrice = best_offer + int(order_params['p']) * minTick
+            order.lmtPrice = best_offer + int(order_params['p']) * contract_dets['minTick']
 
     elif order_params['t'] == 'm':
         order.orderType = "MKT"
@@ -88,7 +86,7 @@ def make_order(app, contract_dets, message):
 
     order.transmit = True
 
-    return order
+    return order               
 
 
 def calc_unit(app, ibcontract, unit_size, initial_capital, barSize):

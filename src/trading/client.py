@@ -101,7 +101,7 @@ class TestClient(EClient):
         )
 
         # Wait until we get a completed data, an error, or get bored waiting
-        max_wait_seconds = 6
+        max_wait_seconds = 10
 
         historic_data = historic_data_queue.get(timeout=max_wait_seconds)
 

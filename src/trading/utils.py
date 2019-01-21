@@ -1,7 +1,7 @@
 from ibapi.contract import Contract as IBcontract
 from copy import deepcopy
-import numpy as np, pandas as pd
-import queue, datetime, time
+import numpy as np, pandas as pd, datetime as dt
+import queue, datetime, time, database as db
 
 ## Define global variables used in several modules:
 global FINISHED
@@ -27,6 +27,30 @@ global DEFAULT_EXEC_TICKER
 DEFAULT_EXEC_TICKER = 78
 global FILL_CODE
 FILL_CODE = -1 ## This is the reqId IB API sends when a fill is received
+
+
+def parse_message(message):
+    '''
+    Takes the message from a TradingView Alert and stores each parameter into a dict
+    '''
+    order_params = {k: v for k, v in (x.split('=') for x in message.split(' '))}
+    
+    return order_params      
+
+
+def date_range(start, end, bar_size):
+    '''
+    Generates dates at bar_size intervals between start and end
+    '''
+    result = []
+    nxt = start
+    delta = dt.timedelta(minutes=db.bar_to_mins[bar_size])
+    while nxt <= end:
+        result.append(nxt)
+        nxt += delta
+    result_df = pd.DataFrame({'Date': result})
+
+    return result_df
 
 
 def create_contract(symbol, secType, currency, exchange, expiry):
@@ -524,3 +548,4 @@ class simpleCache(object):
             self._create_cache_element(accountName, cache_label)
             self._cache[accountName][cache_label] = dict_with_data[cache_label]
             self._set_time_of_updated_cache(accountName, cache_label)
+            
