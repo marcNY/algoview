@@ -1,7 +1,8 @@
 from ibapi.contract import Contract as IBcontract
 from copy import deepcopy
+from pathlib import Path
 import numpy as np, pandas as pd, datetime as dt
-import queue, datetime, time, database as db
+import queue, datetime, time, os, database as db
 
 ## Define global variables used in several modules:
 global FINISHED
@@ -28,6 +29,47 @@ DEFAULT_EXEC_TICKER = 78
 global FILL_CODE
 FILL_CODE = -1 ## This is the reqId IB API sends when a fill is received
 
+
+def change_cwd(new_dir='src'):
+    '''
+    Sets cwd to the desired directory.
+    new_dir can take the following values:
+    'src', 'algoview', 'Projects' or 'Home'
+    '''
+    homedir = str(Path.home())
+    if new_dir=='home' or new_dir=='Home':
+        os.chdir(homedir)
+    elif new_dir=='Projects' or new_dir=='projects':
+        os.chdir(homedir + '/Projects')
+    elif new_dir=='algoview' or new_dir=='Algoview':
+        os.chdir(homedir + '/Projects/algoview')
+    elif new_dir=='src':
+        os.chdir(homedir + '/Projects/algoview/src')
+    else:
+        return 'Please specify a valid directory'
+    
+    return os.getcwd()
+
+
+def get_path(new_dir='algoview'):
+    '''
+    Gets the full path to the desired directory.
+    new_dir can take the following values:
+    'src', 'algoview', 'Projects' or 'Home'
+    '''
+    homedir = str(Path.home())
+    if new_dir=='home' or new_dir=='Home':
+        full_path = homedir
+    elif new_dir=='Projects' or new_dir=='projects':
+        full_path = homedir + '/Projects/'
+    elif new_dir=='algoview' or new_dir=='Algoview':
+        full_path = homedir + '/Projects/algoview/'
+    elif new_dir=='src':
+        full_path = homedir + '/Projects/algoview/src/'
+    else:
+        return 'Please specify a valid directory'
+    
+    return full_path
 
 def parse_message(message):
     '''
