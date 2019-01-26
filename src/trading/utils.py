@@ -2,7 +2,7 @@ from ibapi.contract import Contract as IBcontract
 from copy import deepcopy
 from pathlib import Path
 import numpy as np, pandas as pd, datetime as dt
-import queue, datetime, time, os, database as db
+import queue, datetime, time, os, trading.database as db
 
 ## Define global variables used in several modules:
 global FINISHED

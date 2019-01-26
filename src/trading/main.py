@@ -1,6 +1,7 @@
 import trading.functions as fn
 import os
 import time
+
 cwd = os.getcwd()
 print(cwd)
 if cwd.find('src') != len(cwd)-3:
